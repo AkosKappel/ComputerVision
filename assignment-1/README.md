@@ -1,1 +1,1 @@
-# assignment-1-AkosKappel
+# Assignment 1 - Ákos Kappel
