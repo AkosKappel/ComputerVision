@@ -220,7 +220,7 @@ Načítanie a zmenšenie obrázku prebiehalo rovnako ako pri prvom obrázku.
 
 ### 2. Analýza
 
-Opäť som zažal rozdelením obrázku na jednotlivé kanály, aby som zistil, ktorý z nich je najvhodnejší na segmentáciu.
+Analýzu som opäť zažal rozdelením obrázku na jednotlivé kanály, aby som zistil, ktorý z nich je najvhodnejší na segmentáciu.
 Pri tomto obrázku sa ukázalo, že najvýraznejší rozdiel medzi bunkami a pozadím je v červenom kanáli.
 
 ![Channels and grayscale image](out/bunky_channels.png)
@@ -229,20 +229,136 @@ Výber červeného kanálu som potrvrdil aj histogramom, na ktorom je vidieť, �
 
 ![Histograms](out/bunky_histograms.png)
 
-Skúsil som porovnať aj HSV kanály, ale nepodarilo sa získať lepśie rozdelenie hodnôt ako pri RGB kanáloch.
+Skúsil som porovnať aj HSV kanály, ale nepodarilo sa získať lepšie rozdelenie hodnôt ako pri RGB kanáloch.
 
 ![Channels and grayscale image](out/bunky_hsv_channels.png)
 
 ### 3. Preprocessing
 
-#### 3.1. 
+#### 3.1. Odstránenie šumu
 
+Na odstránenie šumu som vyskúšal štyri rôzne metódy: *mean filter*, *median blur*, *gaussian blur* a *bilateral filter*.
+Najlepšie výsledky som získal pri použití metódy *median blur* s veľkosťou kernelu *5x5*.
 
 ![Blurs](out/bunky_blur.png)
 
+#### 3.2. Binarizácia
+
+Na binarizáciu obrázku som použil dve metódy: *OTSU thresholding* a *adaptive thresholding*.
+Na rozdiel od prvého obrázku, kde sa mi podarilo dosiahnuť lepšie výsledky pri použití *adaptive thresholding*, pri tomto obrázku som dosiahol lepšie výsledky pri metóde *OTSU thresholding*.
+Avšak aj pri tejto metóde vznikli malé chyby.
+Najmä také, že bunky, ktoré boli blízko seba, sa spojili do jednej veľkej bunky.
+Tento jav môžeme vidieť napríklad v ľavej hornej časti obrázku.
+
+```python
+# blur image
+blur = cv.GaussianBlur(r, (5, 5), 0)
+
+# OTSU thresholding
+ret, otsu_thresh = cv.threshold(blur, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+
+# Adaptive thresholding
+adap_thresh = cv.adaptiveThreshold(blur, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 175, 2)
+```
 
 ![Thresholds](out/bunky_thresholding.png)
 
+#### 3.3. Morfologické operácie
+
+Pomocou morfologických operácií som sa snažil odstrániť chyby, ktoré vznikli pri binarizácii.
+Na začiatku som použil operáciu *morphological closing*, ktorá odstránila malé fragmenty z pozadia.
+Následne som použil operáciu *dilate*, ktorou som sa snažil spojené bunky rozdeliť.
+Nakoniec som aplikoval *morphological opening*, ktorá odstránila malé bodky z povrchu buniek.
+
+```python
+# morphological closing
+kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
+closing = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+
+# dilate image
+kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+dilate = cv.dilate(closing, kernel, iterations=1)
+
+# morphological opening
+kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+opening = cv.morphologyEx(dilate, cv.MORPH_OPEN, kernel, iterations=2)
+```
+
+![Morphological operations](out/bunky_morph.png)
 
 ### 4. Detekcia kontúr
 
+Pred detekciou kontúr som potreboval invertnúť obrázok, aby som mohol detekovať biele bunky na čierom pozadí.
+Potom som použil metódu `cv2.findContours()` na nájdenie kontúr.
+Nakoniec som prefiltroval nájdené kontúry podľa veľkosti a nakreslil ich na pôvodný obrázok.
+
+```python
+# invert image
+inverted = cv.bitwise_not(dilate)
+
+# find contours
+contours, hierarchy = cv.findContours(inverted, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+# filter contours
+contours = [c for c in contours if cv.contourArea(c) > 100]
+
+# draw contours
+contour_img = img.copy()
+cv.drawContours(contour_img, contours, -1, (0, 255, 0), 1)
+```
+
+![Found contours](out/bunky_result_1.png)
+
+Výsledný počet nájdených buniek mi vyšiel ***247***.
+
+### Metóda watershed
+
+Pri tomto obrázku som si vyskúšal aj druhý spôsob na spočítanie buniek, a to metódu *Watershed*.
+Na začiatok som spravil *OTSU thresholding* na červenom kanáli a binarizovaný obraz som upravil morfologickými operáciami.
+Potom som oblasti obrazu rozdelil na tri regióny: pozadie, popredie a neznáma časť.
+Pozadie som zistil tak, že som na binarizovaný obraz aplikoval diláciu, aby som zvýšil plochy buniek, a pre pozadie som zvolil tie body, ktoré mali aj po dilácii hodnotu 0.
+Na zistenie popredia som použil funkciu `cv2.distanceTransform()`, ktorá vypočíta vzdialenosť od každého bodu k najbližšiemu bodu s hodnotou 0.
+Následne som na vypočítané vzdialenosti aplikoval funkciu `cv2.normalize()`, pomocou ktorej som normalizoval hodnoty do intervalu [0, 1] a pre popredie som zvolil tie body, ktoré majú hodnotu väčšiu ako 0.2.
+Z detekovaného popredia som potom vytvoril značky, ktoré som použil ako vstup pre funkciu `cv2.watershed()`.
+
+```python
+# Otsu's thresholding on red channel
+_, otsu = cv.threshold(r, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+
+# morphological operations
+kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
+opening = cv.morphologyEx(otsu, cv.MORPH_OPEN, kernel, iterations=2)
+
+# find sure background area
+sure_bg = cv.dilate(opening, kernel, iterations=5)
+
+# create distance transform
+dist = cv.distanceTransform(opening, cv.DIST_L2, 5)
+cv.normalize(dist, dist, 0, 1.0, cv.NORM_MINMAX)
+
+# find sure foreground area
+_, sure_fg = cv.threshold(dist, 0.2 * dist.max(), 255, 0)
+
+# find unknown region
+sure_fg = np.uint8(sure_fg)
+unknown = cv.subtract(sure_bg, sure_fg)
+
+# marker labelling
+_, markers = cv.connectedComponents(sure_fg)
+
+# add one to all labels so that sure background is not 0, but 1
+markers = markers + 1
+# mark the region of unknown with zero
+markers[unknown == 255] = 0
+
+# apply watershed
+markers = cv.watershed(img, markers)
+watershed_img = img.copy()
+watershed_img[markers == -1] = [0, 255, 0]
+```
+
+Ako to môžme vidieť na dolnom obrázku, metóda *Watershed* nedosiahla podobne dobré výsledky ako predchádzajúca metóda.
+Hlavným problémom pri tejto metóde bolo to, že watershed rozdelil mnohé bunky na viacero menších častí a iné zase naopak, spojil do jedného veľkého celku.
+Pre zlepšenie výsledkov som skúsil zmeniť parametre na nájdenie poporedia a pozadia, ale nepodarilo sa mi získať lepšie segmentovaný obrázok, než ako pri metóde detekovania kontúr.
+
+![Found contours](out/bunky_result_2.png)
