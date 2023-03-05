@@ -53,8 +53,8 @@ hist_b = cv.calcHist([b], [0], None, [256], [0, 256])
 ```
 
 Ako to môžeme vidieť na nasledovných grafoch, všetky štyri výstupy sú si veľmi podobné.
-Pri výbere vhodného kanálu som si pomohol aj zobrazením histogramov pre jednotlivé kanály, ktorý však potvrdil že všetky kanály sú skoro identické.
-Rozhodol som sa teda ďalej pracovať so šedotónovým obrázkom.
+Pri výbere vhodného kanálu som si pomohol aj zobrazením histogramov pre jednotlivé kanály.
+Histogramy však potvrdil že všetky kanály sú skoro identické, a preto som sa rozhodol ďalej pracovať len so šedotónovým obrázkom.
 
 ![Grayscale image & RGB channels](out/pena_channels.png)
 
@@ -79,10 +79,10 @@ bilateral = cv.bilateralFilter(gray, 9, 75, 75)
 #### 3.2. Binarizácia
 
 Ďalej som pokračoval binarizáciou obrázku.
-Na prahovanie som použil metódu Otsu a aj adaptívne prahovanie.
-Metóda Otsu nebola pre tento obrázok vhodná, pretože spôsobovala problémy, najmä v pravej a dolnej časti obrázku, kde sa vytvorili čierne škvrny.
-Adaptívne prahovanie však fungovalo veľmi dobre a výsledok bol lepší ako pri Otsu.
-Túto metódu som si vyskúśal na všetkých štyroch rozmazaných obrázkoch a následne som si vybral najlepší výsledok, ktorým sa zdal byť obrázok rozmazaný pomocou metódy Gaussian Blur.
+Na prahovanie som použil metódu OTSU a aj adaptívne prahovanie.
+Metóda OTSU nebola pre tento obrázok vhodná, pretože spôsobovala problémy, najmä v pravej a dolnej časti obrázku, kde sa vytvorili čierne škvrny.
+Adaptívne prahovanie však fungovalo veľmi dobre a výsledok bol lepší ako pri OTSU.
+Adaptívne prahovanie som si vyskúśal na všetkých štyroch rozmazaných obrázkoch a následne som si vybral najlepší výsledok, ktorým sa zdal byť obrázok rozmazaný pomocou metódy *Gaussian Blur*.
 Pri tomto obrázku sú hrany najvýraznejšie a na pozadí sa vyskytuje najmenej čiernych bodov.
 
 ```python
@@ -125,7 +125,7 @@ closing = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel, iterations=iterations)
 ![Morphological operations](out/pena_morph.png)
 
 Vhodným poradím na riešenie úlohy bolo použiť operáciu **opening** a následne **erosion**.
-Pre vytvorenie kernelu som použil argument `cv2.MORPH_ELLIPSE`, ktorý sa ukázal byť lepší ako obyčajný štvorcový kernel.
+Pre vytvorenie kernelu som použil parameter `cv2.MORPH_ELLIPSE`, ktorým som získal lepšie výsledky ako s obyčajnýn štvorcovým kernelom.
 
 ```python
 # apply morphological opening
@@ -139,8 +139,10 @@ eroded = cv.erode(opening, kernel, iterations=1)
 
 ![Opening with erosion](out/pena_opening_erosion.png)
 
-Keďže výsledný obrázok ešte stále obsahoval nežiadané objekty, vyskúśal som použiť filtrovanie s vlastným kernelom.
-Opäť som použil rovnaké morfologické operácie, ako pri predchádzajúcom postupe, ale výsledok bol teraz lepší.
+Keďže výsledný obrázok ešte stále obsahoval nežiadané objekty, vyskúšal som použiť filtrovanie s vlastným kernelom.
+Ako kernel som použil maticu s veľkosťou *3x3*, ktorá obsahovala hodnoty *-1* okrem stredného prvku, ktorý mal hodnotu *9*.
+Takáto matica má za účel zaostriť obrázok a tým viac zvýrazniť hrany.
+Potom som na zaostrenom obraze použil rovnaké morfologické operácie, ako pri predchádzajúcom kroku, ale tentokrát som dosiahol lepší výsledný obrázok.
 
 ```python
 kernel = np.array([
@@ -174,8 +176,8 @@ cont_img = cv.drawContours(img.copy(), contours, -1, (255, 0, 0), 2)
 
 ![Result 1](out/pena_result_1.png)
 
-Podarilo sa celkom pekne detekovať kontúry bubliniek, ale v pravej časti obrázku, kde sa nachádza veľa malých bubliniek vedľa seba, sa niektoré nezapočítali.
-Preto som skúsil ešte jeden prístup, pri ktorom som na začiatku predspracovania spravil rozdiel medzi šedotónovým obrázkom a obrázkom ktorý vznikol vlastným kernelom.
+Podarilo sa celkom pekne detekovať kontúry bubliniek, ale v pravej časti obrázku, kde sa nachádza vedľa seba veľa malých bubliniek, sa niektoré nezapočítali.
+Preto som skúsil ešte jeden postup, pri ktorom som na začiatku predspracovania spravil rozdiel medzi šedotónovým obrázkom a obrázkom ktorý vznikol vlastným kernelom.
 
 ```python
 # subtract sharp image from grayscale image
@@ -193,9 +195,10 @@ kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
 opening = cv.morphologyEx(thresh, cv.MORPH_OPEN, kernel, iterations=2)
 ```
 
-**Medzivýsledky predspracovania obrázku:**
+[//]: # (**Medzivýsledky predspracovania obrázku:**)
 
-![Full process](out/pena_process.png)
+[//]: # ()
+[//]: # (![Full process]&#40;out/pena_process.png&#41;)
 
 Spôsob hľadania kontúr som nechal rovnaký.
 Ukázalo sa, že vďaka vykonanej úprave sa podarilo detekovať aj niekotré malé bubliny, ktoré boli predtým vynechané.
@@ -210,7 +213,7 @@ Výsledný počet bubliniek mi vyšiel ***624***.
 ## Obrázok 2 - Bunky rakoviny
 
 Pre druhý obrázok som vybral obrázok s rakovinovými bunkami.
-Detailnejší postup segmentácie buniek je v súbore *[breast_cancer.ipynb](breast_cancer.ipynb)*.
+Celý kód postupu segmentácie buniek je v súbore *[breast_cancer.ipynb](breast_cancer.ipynb)*.
 
 ### 1. Načítanie obrázku
 
@@ -225,7 +228,7 @@ Pri tomto obrázku sa ukázalo, že najvýraznejší rozdiel medzi bunkami a poz
 
 ![Channels and grayscale image](out/bunky_channels.png)
 
-Výber červeného kanálu som potrvrdil aj histogramom, na ktorom je vidieť, že červený kanál by sa dal pekne rozdeliť okolo hodnoty *160*.
+Výber červeného kanálu som potrvrdil aj histogramom, na ktorom je vidieť, že červený kanál by vedel pekne rozdeliť obrázok okolo hodnoty *160*.
 
 ![Histograms](out/bunky_histograms.png)
 
@@ -290,7 +293,7 @@ opening = cv.morphologyEx(dilate, cv.MORPH_OPEN, kernel, iterations=2)
 
 Pred detekciou kontúr som potreboval invertnúť obrázok, aby som mohol detekovať biele bunky na čierom pozadí.
 Potom som použil metódu `cv2.findContours()` na nájdenie kontúr.
-Nakoniec som prefiltroval nájdené kontúry podľa veľkosti a nakreslil ich na pôvodný obrázok.
+Nakoniec som prefiltroval nájdené kontúry podľa veľkosti a nakreslil som ich na pôvodný obrázok.
 
 ```python
 # invert image
@@ -318,8 +321,9 @@ Na začiatok som spravil *OTSU thresholding* na červenom kanáli a binarizovan�
 Potom som oblasti obrazu rozdelil na tri regióny: pozadie, popredie a neznáma časť.
 Pozadie som zistil tak, že som na binarizovaný obraz aplikoval diláciu, aby som zvýšil plochy buniek, a pre pozadie som zvolil tie body, ktoré mali aj po dilácii hodnotu 0.
 Na zistenie popredia som použil funkciu `cv2.distanceTransform()`, ktorá vypočíta vzdialenosť od každého bodu k najbližšiemu bodu s hodnotou 0.
-Následne som na vypočítané vzdialenosti aplikoval funkciu `cv2.normalize()`, pomocou ktorej som normalizoval hodnoty do intervalu [0, 1] a pre popredie som zvolil tie body, ktoré majú hodnotu väčšiu ako 0.2.
-Z detekovaného popredia som potom vytvoril značky, ktoré som použil ako vstup pre funkciu `cv2.watershed()`.
+Následne som na vypočítané vzdialenosti aplikoval funkciu `cv2.normalize()`, pomocou ktorej som normalizoval hodnoty do intervalu [0, 1] a pre popredie som zvolil tie body, ktoré mali hodnotu väčšiu ako 0.2.
+Ako neznámu časť som zvolil oblasti, ktoré neboli ani pozadie ani popredie.
+Potom som z detekovaného popredia vytvoril značky, ktoré som použil ako vstup pre funkciu `cv2.watershed()`.
 
 ```python
 # Otsu's thresholding on red channel
@@ -362,3 +366,4 @@ Hlavným problémom pri tejto metóde bolo to, že watershed rozdelil mnohé bun
 Pre zlepšenie výsledkov som skúsil zmeniť parametre na nájdenie poporedia a pozadia, ale nepodarilo sa mi získať lepšie segmentovaný obrázok, než ako pri metóde detekovania kontúr.
 
 ![Found contours](out/bunky_result_2.png)
+
