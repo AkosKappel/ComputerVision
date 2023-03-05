@@ -1,13 +1,36 @@
 # Assignment 1
 
-Meno: Ákos Kappel
+**Meno:** Ákos Kappel
 
-Predmet: Počítačová videnie
+**Predmet:** Počítačová videnie
 
-Cvičenie: Pondelok 11:00
+**Cvičenie:** Pondelok 11:00
 
-Cvičiaci: Ing. Marek Jakab, PhD.
+**Cvičiaci:** Ing. Marek Jakab, PhD.
 
+**Použité knižnice:** OpenCV, Matplotlib, Numpy
+
+**Dôležité metódy:**
+imread,
+resize,
+cvtColor,
+split,
+calcHist,
+GaussianBlur,
+medianBlur,
+blur,
+bilateralFilter,
+threshold,
+adaptiveThreshold,
+morphologyEx,
+dilate,
+erode,
+findContours,
+drawContours,
+bitwise_not,
+watershed,
+distanceTransform,
+connectedComponents
 
 ## Obrázok 1 - Bublinky v pive
 
