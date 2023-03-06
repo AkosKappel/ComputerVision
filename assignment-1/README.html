@@ -1152,18 +1152,22 @@ Adaptívne prahovanie však fungovalo veľmi dobre a výsledok bol lepší ako p
 Adaptívne prahovanie som si vyskúśal na všetkých štyroch rozmazaných obrázkoch a následne som si vybral najlepší
 výsledok, ktorým sa zdal byť obrázok rozmazaný pomocou metódy <em>Gaussian Blur</em>.
 Pri tomto obrázku sú hrany najvýraznejšie a na pozadí sa vyskytuje najmenej čiernych bodov.</p>
-<p>Parametre pre funkciu <code>cv2.threshold()</code> sú nasledovné:
-* <code>gray</code> - vstupný obrázok
-* <code>0</code> - hodnota prahovania
-* <code>255</code> - maximálna hodnota prahovania
-* <code>cv.THRESH_BINARY + cv.THRESH_OTSU</code> - typ prahovania</p>
-<p>Parametre pre funckiu <code>cv2.adaptiveThreshold()</code>:
-* <code>gray</code> - vstupný obrázok
-* <code>255</code> - maximálna hodnota prahovania
-* <code>cv.ADAPTIVE_THRESH_GAUSSIAN_C</code> - metóda adaptívneho prahovania (<em>Gaussian</em> alebo <em>Mean</em>)
-* <code>cv.THRESH_BINARY</code> - typ prahovania
-* <code>11</code> - veľkosť okolia, ktoré sa použije pri adaptívnom prahovani
-* <code>2</code> - konštantná hodnota, ktorá sa odčíta z výsledku adaptívneho prahovania</p>
+<p>Parametre pre funkciu <code>cv2.threshold()</code> sú nasledovné:</p>
+<ul>
+<li><code>gray</code> - vstupný obrázok</li>
+<li><code>0</code> - hodnota prahovania</li>
+<li><code>255</code> - maximálna hodnota prahovania</li>
+<li><code>cv.THRESH_BINARY + cv.THRESH_OTSU</code> - typ prahovania</li>
+</ul>
+<p>Parametre pre funckiu <code>cv2.adaptiveThreshold()</code>:</p>
+<ul>
+<li><code>gray</code> - vstupný obrázok</li>
+<li><code>255</code> - maximálna hodnota prahovania</li>
+<li><code>cv.ADAPTIVE_THRESH_GAUSSIAN_C</code> - metóda adaptívneho prahovania (<em>Gaussian</em> alebo <em>Mean</em>)</li>
+<li><code>cv.THRESH_BINARY</code> - typ prahovania</li>
+<li><code>11</code> - veľkosť okolia, ktoré sa použije pri adaptívnom prahovani</li>
+<li><code>2</code> - konštantná hodnota, ktorá sa odčíta z výsledku adaptívneho prahovania</li>
+</ul>
 <div class="highlight"><pre><span class="c1"># OTSO threshold</span>
 <span class="n">ret</span><span class="p">,</span> <span class="n">otsu_thresh</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">gauss</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">THRESH_BINARY</span> <span class="o">+</span> <span class="n">cv</span><span class="o">.</span><span class="n">THRESH_OTSU</span><span class="p">)</span>
 
@@ -1195,10 +1199,12 @@ Pre počet iterácií sa ukázalo, že je vhodné použiť iba jednu alebo maxim
 <span class="n">closing</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">morphologyEx</span><span class="p">(</span><span class="n">thresh</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">MORPH_CLOSE</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="n">iterations</span><span class="p">)</span>
 </pre></div>
 
-<p>Parametre pre funkcie <code>cv2.erode()</code> a <code>cv2.dilate()</code>:
-* <code>thresh</code> - vstupný obrázok
-* <code>kernel</code> - kernel s veľkosťou <em>3x3</em>, s ktorým sa bude obrázok rozmazávať
-* <code>iterations</code> - počet iterácií rozmazávania</p>
+<p>Parametre pre funkcie <code>cv2.erode()</code> a <code>cv2.dilate()</code>:</p>
+<ul>
+<li><code>thresh</code> - vstupný obrázok</li>
+<li><code>kernel</code> - kernel s veľkosťou <em>3x3</em>, s ktorým sa bude obrázok rozmazávať</li>
+<li><code>iterations</code> - počet iterácií rozmazávania</li>
+</ul>
 <p>Pre funkciu <code>cv2.morphologyEx()</code> pribudol ďalší parameter <code>op</code>, ktorý určuje typ morfologického operátoru.</p>
 <p><strong>Ukážka štyroch vyskúšaných morfologických operácií:</strong></p>
 <p><img alt="Morphological operations" src="/C:/Users/kappe/PycharmProjects/PVID/Assignment01/out/pena_morph.png" /></p>
@@ -1229,10 +1235,12 @@ dosiahol lepší výsledný obrázok.</p>
 <span class="n">sharp</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">filter2D</span><span class="p">(</span><span class="n">gray</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
 </pre></div>
 
-<p>Parametre funkcie <code>cv2.filter2D()</code>:
-* <code>gray</code> - vstupný obrázok
-* <code>-1</code> - hĺbka výsledného obrázku (v prípade, že je nastavená na -1, tak sa použije hĺbka vstupného obrázku)
-* <code>kernel</code> - vlastný kernel</p>
+<p>Parametre funkcie <code>cv2.filter2D()</code>:</p>
+<ul>
+<li><code>gray</code> - vstupný obrázok</li>
+<li><code>-1</code> - hĺbka výsledného obrázku (v prípade, že je nastavená na -1, tak sa použije hĺbka vstupného obrázku)</li>
+<li><code>kernel</code> - vlastný kernel</li>
+</ul>
 <p><strong>Výsledok po filtrovaní vlastným kernelom:</strong></p>
 <p><img alt="Sharp image opening with erosion" src="/C:/Users/kappe/PycharmProjects/PVID/Assignment01/out/pena_sharp_opening_erosion.png" /></p>
 <h3 id="4-detekcia-kontur">4. Detekcia kontúr<a class="headerlink" href="#4-detekcia-kontur" title="Permanent link"></a></h3>
@@ -1249,18 +1257,24 @@ Následne nájdené kontúry som filtroval podľa minimálnej požadovanej veľk
 <span class="n">cont_img</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">drawContours</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">contours</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
 </pre></div>
 
-<p>Parametre funkcie <code>cv2.findContours()</code>:
-* <code>eroded</code> - vstupný obrázok
-* <code>cv.RETR_EXTERNAL</code> - metóda detekcie kontúr (v tomto prípade sa detekujú iba kontúry vonkajších objektov)
-* <code>cv.CHAIN_APPROX_SIMPLE</code> - metóda aproximácie kontúr</p>
-<p>Parametre funkcie <code>cv2.contourArea()</code>:
-* <code>c</code> - kontúra, ktorej veľkosť chceme zistiť</p>
-<p>Parametre funkcie <code>cv2.drawContours()</code>:
-* <code>img.copy()</code> - vstupný obrázok
-* <code>contours</code> - zoznam kontúr, ktoré chceme vykresliť
-* <code>-1</code> - index kontúry, ktorú chceme vykresliť (v prípade, že je nastavená na -1, tak sa vykreslia všetky kontúry)
-* <code>(255, 0, 0)</code> - farba kontúr
-* <code>2</code> - hrúbka kontúr</p>
+<p>Parametre funkcie <code>cv2.findContours()</code>:</p>
+<ul>
+<li><code>eroded</code> - vstupný obrázok</li>
+<li><code>cv.RETR_EXTERNAL</code> - metóda detekcie kontúr (v tomto prípade sa detekujú iba kontúry vonkajších objektov)</li>
+<li><code>cv.CHAIN_APPROX_SIMPLE</code> - metóda aproximácie kontúr</li>
+</ul>
+<p>Parametre funkcie <code>cv2.contourArea()</code>:</p>
+<ul>
+<li><code>c</code> - kontúra, ktorej veľkosť chceme zistiť</li>
+</ul>
+<p>Parametre funkcie <code>cv2.drawContours()</code>:</p>
+<ul>
+<li><code>img.copy()</code> - vstupný obrázok</li>
+<li><code>contours</code> - zoznam kontúr, ktoré chceme vykresliť</li>
+<li><code>-1</code> - index kontúry, ktorú chceme vykresliť (v prípade, že je nastavená na -1, tak sa vykreslia všetky kontúry)</li>
+<li><code>(255, 0, 0)</code> - farba kontúr</li>
+<li><code>2</code> - hrúbka kontúr</li>
+</ul>
 <p><img alt="Result 1" src="/C:/Users/kappe/PycharmProjects/PVID/Assignment01/out/pena_result_1.png" /></p>
 <p>Podarilo sa celkom pekne detekovať kontúry bubliniek, ale v pravej časti obrázku, kde sa nachádza vedľa seba veľa malých
 bubliniek, sa niektoré nezapočítali.
@@ -1330,10 +1344,12 @@ Tento jav môžeme vidieť napríklad v ľavej hornej časti obrázku.</p>
 Na začiatku som použil operáciu <em>morphological closing</em>, ktorá odstránila malé fragmenty z pozadia.
 Následne som použil operáciu <em>dilate</em>, ktorou som sa snažil spojené bunky rozdeliť.
 Nakoniec som aplikoval <em>morphological opening</em>, ktorá odstránila malé bodky z povrchu buniek.</p>
-<p>Parametre funkcie <code>cv2.getStructuringElement()</code>:
-* <code>cv.MORPH_ELLIPSE</code> - elipsoidný štruktúrovací prvok
-* <code>cv.MORPH_RECT</code> - obdĺžnikový štruktúrovací prvok
-* <code>(3, 3)</code> - veľkosť kernelu</p>
+<p>Parametre funkcie <code>cv2.getStructuringElement()</code>:</p>
+<ul>
+<li><code>cv.MORPH_ELLIPSE</code> - elipsoidný štruktúrovací prvok</li>
+<li><code>cv.MORPH_RECT</code> - obdĺžnikový štruktúrovací prvok</li>
+<li><code>(3, 3)</code> - veľkosť kernelu</li>
+</ul>
 <div class="highlight"><pre><span class="c1"># morphological closing</span>
 <span class="n">kernel</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">getStructuringElement</span><span class="p">(</span><span class="n">cv</span><span class="o">.</span><span class="n">MORPH_ELLIPSE</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 <span class="n">closing</span> <span class="o">=</span> <span class="n">cv</span><span class="o">.</span><span class="n">morphologyEx</span><span class="p">(</span><span class="n">thresh</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">MORPH_CLOSE</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
@@ -1416,19 +1432,25 @@ Potom som z detekovaného popredia vytvoril značky, ktoré som použil ako vstu
 <span class="n">watershed_img</span><span class="p">[</span><span class="n">markers</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 </pre></div>
 
-<p>Parametre funkcie <code>cv2.distanceTransform()</code>:
-* <code>image</code> - vstupný obrázok
-* <code>distanceType</code> - typ vzdialenosti (cv2.DIST_L2, cv2.DIST_L1)
-* <code>maskSize</code> - veľkosť masky</p>
-<p>Parametre funkcie <code>cv2.normalize()</code>:
-* <code>src</code> - vstupný obrázok
-* <code>dst</code> - výstupný obrázok
-* <code>0</code> - minimálna hodnota
-* <code>1.0</code> - maximálna hodnota
-* <code>cv2.NORM_MINMAX</code> - typ normalizácie</p>
-<p>Parametre funkcie <code>cv2.watershed()</code>:
-* <code>image</code> - vstupný obrázok
-* <code>markers</code> - značky, ktoré určujú regióny, v ktorých sa nachádzajú bunky</p>
+<p>Parametre funkcie <code>cv2.distanceTransform()</code>:</p>
+<ul>
+<li><code>image</code> - vstupný obrázok</li>
+<li><code>distanceType</code> - typ vzdialenosti (cv2.DIST_L2, cv2.DIST_L1)</li>
+<li><code>maskSize</code> - veľkosť masky</li>
+</ul>
+<p>Parametre funkcie <code>cv2.normalize()</code>:</p>
+<ul>
+<li><code>src</code> - vstupný obrázok</li>
+<li><code>dst</code> - výstupný obrázok</li>
+<li><code>0</code> - minimálna hodnota</li>
+<li><code>1.0</code> - maximálna hodnota</li>
+<li><code>cv2.NORM_MINMAX</code> - typ normalizácie</li>
+</ul>
+<p>Parametre funkcie <code>cv2.watershed()</code>:</p>
+<ul>
+<li><code>image</code> - vstupný obrázok</li>
+<li><code>markers</code> - značky, ktoré určujú regióny, v ktorých sa nachádzajú bunky</li>
+</ul>
 <p>Ako to môžme vidieť na dolnom obrázku, metóda <em>Watershed</em> nedosiahla podobne dobré výsledky ako predchádzajúca metóda.
 Hlavným problémom pri tejto metóde bolo to, že watershed rozdelil mnohé bunky na viacero menších častí a iné zase
 naopak, spojil do jedného veľkého celku.

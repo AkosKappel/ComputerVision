@@ -113,12 +113,14 @@ výsledok, ktorým sa zdal byť obrázok rozmazaný pomocou metódy *Gaussian Bl
 Pri tomto obrázku sú hrany najvýraznejšie a na pozadí sa vyskytuje najmenej čiernych bodov.
 
 Parametre pre funkciu `cv2.threshold()` sú nasledovné:
+
 * `gray` - vstupný obrázok
 * `0` - hodnota prahovania
 * `255` - maximálna hodnota prahovania
 * `cv.THRESH_BINARY + cv.THRESH_OTSU` - typ prahovania
 
 Parametre pre funckiu `cv2.adaptiveThreshold()`:
+
 * `gray` - vstupný obrázok
 * `255` - maximálna hodnota prahovania
 * `cv.ADAPTIVE_THRESH_GAUSSIAN_C` - metóda adaptívneho prahovania (*Gaussian* alebo *Mean*)
@@ -163,6 +165,7 @@ closing = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel, iterations=iterations)
 ```
 
 Parametre pre funkcie `cv2.erode()` a `cv2.dilate()`:
+
 * `thresh` - vstupný obrázok
 * `kernel` - kernel s veľkosťou *3x3*, s ktorým sa bude obrázok rozmazávať
 * `iterations` - počet iterácií rozmazávania
@@ -206,6 +209,7 @@ sharp = cv.filter2D(gray, -1, kernel)
 ```
 
 Parametre funkcie `cv2.filter2D()`:
+
 * `gray` - vstupný obrázok
 * `-1` - hĺbka výsledného obrázku (v prípade, že je nastavená na -1, tak sa použije hĺbka vstupného obrázku)
 * `kernel` - vlastný kernel
@@ -232,14 +236,17 @@ cont_img = cv.drawContours(img.copy(), contours, -1, (255, 0, 0), 2)
 ```
 
 Parametre funkcie `cv2.findContours()`:
+
 * `eroded` - vstupný obrázok
 * `cv.RETR_EXTERNAL` - metóda detekcie kontúr (v tomto prípade sa detekujú iba kontúry vonkajších objektov)
 * `cv.CHAIN_APPROX_SIMPLE` - metóda aproximácie kontúr
 
 Parametre funkcie `cv2.contourArea()`:
+
 * `c` - kontúra, ktorej veľkosť chceme zistiť
 
 Parametre funkcie `cv2.drawContours()`:
+
 * `img.copy()` - vstupný obrázok
 * `contours` - zoznam kontúr, ktoré chceme vykresliť
 * `-1` - index kontúry, ktorú chceme vykresliť (v prípade, že je nastavená na -1, tak sa vykreslia všetky kontúry)
@@ -351,6 +358,7 @@ Následne som použil operáciu *dilate*, ktorou som sa snažil spojené bunky r
 Nakoniec som aplikoval *morphological opening*, ktorá odstránila malé bodky z povrchu buniek.
 
 Parametre funkcie `cv2.getStructuringElement()`:
+
 * `cv.MORPH_ELLIPSE` - elipsoidný štruktúrovací prvok
 * `cv.MORPH_RECT` - obdĺžnikový štruktúrovací prvok
 * `(3, 3)` - veľkosť kernelu
@@ -448,11 +456,13 @@ watershed_img[markers == -1] = [0, 255, 0]
 ```
 
 Parametre funkcie `cv2.distanceTransform()`:
+
 * `image` - vstupný obrázok
 * `distanceType` - typ vzdialenosti (cv2.DIST_L2, cv2.DIST_L1)
 * `maskSize` - veľkosť masky
 
 Parametre funkcie `cv2.normalize()`:
+
 * `src` - vstupný obrázok
 * `dst` - výstupný obrázok
 * `0` - minimálna hodnota
@@ -460,6 +470,7 @@ Parametre funkcie `cv2.normalize()`:
 * `cv2.NORM_MINMAX` - typ normalizácie
 
 Parametre funkcie `cv2.watershed()`:
+
 * `image` - vstupný obrázok
 * `markers` - značky, ktoré určujú regióny, v ktorých sa nachádzajú bunky
 
