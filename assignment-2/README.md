@@ -92,10 +92,94 @@ Na obrázku nižšie je niekoľko ukážok gamma korekcie s rôznymi hodnotami g
 
 ## 2. Experimenty s úpravou obrazu (image enhancement)
 
-
 ### Segmentácia s využitím informácií o farbách
+
+Pri segmentácií som opäť začal s načítaním obrazu a jeho konverziou do farebného priestoru **Lab**, s hodnotami pixelov z rozsahu [0-1].
+Ďalej som si z obrazu vybral malý región, ktorý obsahoval farbu buniek, ktoré som chcel vysegmentovať a vypočítal som priemernú farbu tohto regiónu
+
+```python
+# Load the image
+img = cv.imread(file)
+float32_img = img.astype(np.float32) / 255.0
+
+# Convert to Lab color space
+lab_img = cv.cvtColor(float32_img, cv.COLOR_BGR2LAB)
+
+# Define the region of interest and its average 'Lab' color
+roi = lab_img[2365:2398, 1622:1646]
+avg_color = np.mean(roi, axis=(0, 1))
+
+# Convert region of interest to RGB for visualization
+roi_rgb = cv.cvtColor(roi, cv.COLOR_LAB2BGR)[:, :, ::-1]
+avg_color_rgb = np.mean(roi_rgb, axis=(0, 1))
+```
+
+![Region of interest](out/brown_roi.png)
+
+Potom som išiel vypočítať *delta lab* hodnotu pre každý pixel z obrázku.
+Túto hodnotu som vypočítal ako euklidovskú vzdialenosť medzi *Lab* hodnotou farby daného pixelu a *Lab* hodnotou priemernej farby regiónu.
+Následne som vytvoril masku, ktorá obsahovala iba pixely, ktoré boli dostatočne blízko priemernej farbe regiónu.
+Masku som vytvoril cez threshold, pri ktorej som však nevedel pouźiť *OTSU* algoritmus, pretože výsledok nebol dostatočne dobrý.
+Preto som nakoniec nastavil vlastnú hodnotu pre threshold.
+Na nasledujúcom obrázku môžeme vidieť rozdiel medzi *OTSU* algoritmom a manuálnym nastavením thresholdu na hodnotu 15 pre obrázok *[HMRegistred.png](images/HMRegistred.png)*.
+
+![Delta lab threshold](out/delta_lab_threshold.png)
+
+```python
+# Calculate the delta Lab as euclidean distance for each pixel in the image
+delta_lab = np.sqrt(np.sum(np.square(lab_img - avg_color), axis=2))
+
+# Threshold the distance map
+threshold = 20.0
+mask = (delta_lab <= threshold).astype(np.uint8)
+
+# Apply the mask to the original image
+result = cv.bitwise_and(img, img, mask=mask)
+```
+
+Jednotlivé fázy procesu segmentácie obrazu *[P63Registred.png](images/P63Registred.png)* s využitím informácie o farbách som zobrazil na obrázkoch nižšie.
+
+![Segmentation process](out/brown_segmentation.png)
+
+Proces segmentácie som aplikoval aj na druhý obrázok, ktorý obsahoval bunky iných farieb.
+Pri výbere malého vzorového regiónu z obrazu som skúšal vyberať aj také regióny, ktoré mali iné rozmery a nachádzali sa v rozličných častiach obrazu.
+Týmto procesom som získal takéto výsledky:
+
+#### Väčšia fialová bunka s viditeľnými pozadím
+![Region of interest](out/purple_roi.png)
+![Segmentation process](out/purple_segmentation.png)
+
+#### Malá fialová bunka bez viditeľného pozadia
+![Region of interest](out/purple2_roi.png)
+![Segmentation process](out/purple2_segmentation.png)
 
 
 ### Lokalizácia časti obrazu s použitím detektorov a deskriptorov
 
+Pri lokalizácií som si najprv načítal 2 obrázky, jeden veľký a druhý malý, ktorý som chcel lokalizovať vo veľkom obraze.
+Tieto obrázky som potom previedol do šedotónového obrazu.
+
+```python
+# Load the two images
+lookup_img = cv.imread('images/Matching/lookup.tif')
+patch_img = cv.imread('images/Matching/patch1.tif')
+
+# Convert to grayscale
+gray1 = cv.cvtColor(lookup_img, cv.COLOR_BGR2GRAY)
+gray2 = cv.cvtColor(patch_img, cv.COLOR_BGR2GRAY)
+```
+
+![lookup & patch](out/lookup_patch.png)
+
+### TODO: doplniť popis detektorov a deskriptorov
+
+![Harris](out/harris.png)
+
+![FAST](out/fast.png)
+
+![ORB](out/orb.png)
+
+![SIFT](out/sift.png)
+
+![Localized patch](out/localized.png)
 
