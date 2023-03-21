@@ -156,7 +156,7 @@ Týmto procesom som získal takéto výsledky:
 
 ### Lokalizácia časti obrazu s použitím detektorov a deskriptorov
 
-Pri lokalizácií som si najprv načítal 2 obrázky, jeden veľký a druhý malý, ktorý som chcel lokalizovať vo veľkom obraze.
+Pri lokalizácií som si najprv načítal 2 obrázky, [jeden veľký](images/Matching/lookup.tif) a [druhý malý](images/Matching/patch1.tif), ktorý som chcel lokalizovať vo veľkom obraze.
 Tieto obrázky som potom previedol do šedotónového obrazu.
 
 ```python
@@ -165,21 +165,85 @@ lookup_img = cv.imread('images/Matching/lookup.tif')
 patch_img = cv.imread('images/Matching/patch1.tif')
 
 # Convert to grayscale
-gray1 = cv.cvtColor(lookup_img, cv.COLOR_BGR2GRAY)
-gray2 = cv.cvtColor(patch_img, cv.COLOR_BGR2GRAY)
+lookup_gray = cv.cvtColor(lookup_img, cv.COLOR_BGR2GRAY)
+patch_gray = cv.cvtColor(patch_img, cv.COLOR_BGR2GRAY)
 ```
 
 ![lookup & patch](out/lookup_patch.png)
 
-### TODO: doplniť popis detektorov a deskriptorov
+Na obrázkoch som skúšal rôzne kombinácie detektorov a deskriptorov.
+Kokrétne som vyskúšal použiť **Harris**, **FAST** a **SIFT** detektory s **ORB** a **SIFT** deskriptormi.
+Tu sú zobrazené niektoré výsledky týchto experimentov.
 
+#### Harris detector
 ![Harris](out/harris.png)
-
+#### FAST detector
 ![FAST](out/fast.png)
-
+#### FAST detector + ORB descriptor
 ![ORB](out/orb.png)
-
+#### SIFT detector + SIFT descriptor
 ![SIFT](out/sift.png)
 
+Z experimentov som zistil, že na našom datasete obrázkov funguje najlepšie kombinácia **SIFT** detektora a deskriptora.
+V kóde som použil nasledovný postup:
+
+1. Vytvoril som SIFT objekt
+2. Našiel som `keypoints` a `descriptors` pre oba obrázky
+3. Vytvoril som brute force matcher
+4. Použil som `knnMatch` metódu na zhodu deskriptorov
+5. Prefiltroval som zhody tak, aby som zachoval iba tie, ktoré boli dostatočne dobré
+6. Vykreslil som zhody, ktoré zostali po filtrovaní
+
+```python
+# Create SIFT detector
+sift = cv.SIFT_create()
+
+# Find keypoints and descriptors
+kp1, des1 = sift.detectAndCompute(lookup_gray, None)
+kp2, des2 = sift.detectAndCompute(patch_gray, None)
+
+# Match descriptors between images
+matcher = cv.BFMatcher()
+matches = matcher.knnMatch(des1, des2, k=2)
+
+# Filter matches using the Lowe's ratio test
+ratio_thresh = 0.5
+good_matches = []
+for m, n in matches:
+    if m.distance < ratio_thresh * n.distance:
+        good_matches.append(m)
+
+# Draw good matches
+h, w = max(lookup_img.shape[0], patch_img.shape[0]), lookup_img.shape[1] + patch_img.shape[1]
+img_matches = np.empty((h, w, 3), dtype=np.uint8)
+cv.drawMatches(lookup_img, kp1, patch_img, kp2, good_matches, img_matches, 
+               flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+```
+
+Nakoniec som vypočítal homografickú maticu, ktorá transformuje súradnice z malého obrazu do súradníc veľkého obrazu.
+Pomocou tejto matice som transformoval 4 vrcholy určujúce rohy malého obrazu do súradníc veľkého obrazu a danú oblasť som vyznačil obdĺžnikom.
+
+```python
+# Compute homography matrix
+src_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+dst_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+matrix, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
+
+# Localize image patch in the lookup image
+h, w = patch_img.shape[:2]
+src_corners = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+dst_corners = cv.perspectiveTransform(src_corners, matrix)
+
+# Draw rectangle around the patch
+img = cv.polylines(lookup_img.copy(), [np.int32(dst_corners)], True, 255, 3, cv.LINE_AA)
+```
+
 ![Localized patch](out/localized.png)
+
+*SIFT* metódu som aplikoval aj na ďaľšie výseky z veľkého obrazu.
+Druhý výsek bol z rovnakej oblasti ako prvý, ale mal bledšie farby.
+Tretí pouźitý výsek bol z inaj časti obrazu a bol aj rozmerovo väčší.
+*SIFT* algoritmus dokázal všetky tri výseky správne lokalizovať, čo môžeme vidieť na nasledujúcom obrázku.
+
+![All patches localized](out/all_localized.png)
 
