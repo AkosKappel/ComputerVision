@@ -221,7 +221,17 @@ cv.drawMatches(lookup_img, kp1, patch_img, kp2, good_matches, img_matches,
 ```
 
 Nakoniec som vypočítal homografickú maticu, ktorá transformuje súradnice z malého obrazu do súradníc veľkého obrazu.
-Pomocou tejto matice som transformoval 4 vrcholy určujúce rohy malého obrazu do súradníc veľkého obrazu a danú oblasť som vyznačil obdĺžnikom.
+Vypočítaná matica mala tieto hodnoty:
+
+```python
+[
+    [ 3.53424816e-01,  3.52866056e-01,  1.35979625e+02],
+    [-3.53470359e-01,  3.52544323e-01,  6.57400988e+02],
+    [-1.40647852e-07, -1.31746484e-06,  1.00000000e+00],
+]
+```
+
+Pomocou tejto matice som transformoval 4 vrcholy určujúce rohy malého obrazu do súradníc veľkého obrazu a danú oblasť som vyznačil modrým obdĺžnikom.
 
 ```python
 # Compute homography matrix
