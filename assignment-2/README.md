@@ -51,7 +51,7 @@ Tu môžeme vidieť niektoré výsledky:
 ![Grayscale image and histogram](out/grayscale.png)
 #### RGB
 ![RGB image and histogram](out/RGB.png)
-#### XYZ
+#### CIE XYZ
 ![XYZ image and histogram](out/XYZ.png)
 #### Lab
 ![Lab image](out/Lab.png)
@@ -242,7 +242,7 @@ img = cv.polylines(lookup_img.copy(), [np.int32(dst_corners)], True, 255, 3, cv.
 
 *SIFT* metódu som aplikoval aj na ďaľšie výseky z veľkého obrazu.
 Druhý výsek bol z rovnakej oblasti ako prvý, ale mal bledšie farby.
-Tretí pouźitý výsek bol z inaj časti obrazu a bol aj rozmerovo väčší.
+Tretí použitý výsek bol z inej časti obrazu a bol aj rozmerovo väčší.
 *SIFT* algoritmus dokázal všetky tri výseky správne lokalizovať, čo môžeme vidieť na nasledujúcom obrázku.
 
 ![All patches localized](out/all_localized.png)
