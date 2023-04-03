@@ -11,10 +11,10 @@
 **Použité knižnice:** OpenCV, Matplotlib, Numpy
 
 
+
 ## 1 Motion tracking
 
 ### 1.1 Sparse optical flow
-
 
 https://user-images.githubusercontent.com/56064033/229316910-2a8e27e6-8a6b-4a30-be19-c0cc7d7c1eb2.mp4
 
@@ -22,22 +22,48 @@ https://user-images.githubusercontent.com/56064033/229316968-6f040cda-bc37-417b-
 
 https://user-images.githubusercontent.com/56064033/229316841-afa858f0-94f5-41c2-b6f2-fd4075c6e61d.mp4
 
+#### Trackers with foreground mask added
+
+https://user-images.githubusercontent.com/56064033/229512109-f0ce759e-d0ab-4cdd-b1f5-529365f5f65e.mp4
+
+https://user-images.githubusercontent.com/56064033/229512255-d9f53257-f8a3-45e9-9c74-9b2390179566.mp4
+
+https://user-images.githubusercontent.com/56064033/229512298-0ad1026f-af0b-4ba2-8c60-811105faa6fb.mp4
+
 
 ### 1.2 Dense optical flow
 
+https://user-images.githubusercontent.com/56064033/229513257-589d4aee-d02c-4cde-b22f-f73458071323.mp4
 
-https://user-images.githubusercontent.com/56064033/229449411-9aedec48-e745-4841-be5b-31583126e337.mp4
+https://user-images.githubusercontent.com/56064033/229513295-ed031ab9-a0b2-4235-825d-e54d4b6c37f1.mp4
 
-https://user-images.githubusercontent.com/56064033/229449433-46687d34-05be-4f2f-870a-efc8b117fb60.mp4
+https://user-images.githubusercontent.com/56064033/229513331-62e7f449-b320-427a-ab3b-f4b175c8934f.mp4
 
-https://user-images.githubusercontent.com/56064033/229449456-5c59f78d-6f39-4f41-954e-3e10ab088aa8.mp4
 
 
 ## 2 Segmentation
 
 ### 2.1 Background subtraction
 
+#### 2.1.1 Accumulated weighted image
+
+https://user-images.githubusercontent.com/56064033/229514349-9c891d38-bcd4-48b7-a9ab-62e136d19651.mp4
+
+https://user-images.githubusercontent.com/56064033/229514361-da1549d9-c345-4a40-a53e-0c56ec14ac13.mp4
+
+https://user-images.githubusercontent.com/56064033/229514339-4b093449-1be7-49d5-86f5-3f32c262a49e.mp4
+
+#### 2.1.2 Mixture of Gaussian
+
+https://user-images.githubusercontent.com/56064033/229515357-8d58fdc8-7169-4b6d-bf7a-fafc5d39f9c7.mp4
+
+https://user-images.githubusercontent.com/56064033/229515367-a2667c86-539c-47ed-9673-7397c63b1222.mp4
+
+https://user-images.githubusercontent.com/56064033/229515342-d76868fe-191c-47d8-b394-d373f3b1dc2f.mp4
+
+
 ### 2.2 GrabCut
+
 
 ### 2.3 VOC12
 
