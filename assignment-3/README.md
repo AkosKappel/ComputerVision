@@ -47,19 +47,20 @@ https://user-images.githubusercontent.com/56064033/229513331-62e7f449-b320-427a-
 
 #### 2.1.1 Accumulated weighted image
 
-https://user-images.githubusercontent.com/56064033/229514349-9c891d38-bcd4-48b7-a9ab-62e136d19651.mp4
+https://user-images.githubusercontent.com/56064033/229830230-3cd34ee7-2f80-4296-b766-bdbfab45ca54.mp4
 
-https://user-images.githubusercontent.com/56064033/229514361-da1549d9-c345-4a40-a53e-0c56ec14ac13.mp4
+https://user-images.githubusercontent.com/56064033/229830439-7184f68a-d723-4cae-b6f8-07b660091b6a.mp4
 
-https://user-images.githubusercontent.com/56064033/229514339-4b093449-1be7-49d5-86f5-3f32c262a49e.mp4
+https://user-images.githubusercontent.com/56064033/229830574-a4f9eb17-a027-41a8-bffe-51929f9369eb.mp4
+
 
 #### 2.1.2 Mixture of Gaussian
 
-https://user-images.githubusercontent.com/56064033/229515357-8d58fdc8-7169-4b6d-bf7a-fafc5d39f9c7.mp4
+https://user-images.githubusercontent.com/56064033/229830282-c00b46e1-3fa7-4f9b-956c-202870917349.mp4
 
-https://user-images.githubusercontent.com/56064033/229515367-a2667c86-539c-47ed-9673-7397c63b1222.mp4
+https://user-images.githubusercontent.com/56064033/229830533-d56fd738-b54f-4202-91cc-5bc31cc11f0c.mp4
 
-https://user-images.githubusercontent.com/56064033/229515342-d76868fe-191c-47d8-b394-d373f3b1dc2f.mp4
+https://user-images.githubusercontent.com/56064033/229830610-7b3d5b42-8f1c-4b38-97e0-d7269384d456.mp4
 
 
 ### 2.2 GrabCut
