@@ -139,11 +139,6 @@ while cap.isOpened():
     # Read the next frame
     ...
 
-    # Resize the frame (for faster processing)
-    frame = cv.resize(frame, (0, 0), fx=scale, fy=scale)
-    # Convert the frame to grayscale
-    curr_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-
     # Calculate the dense optical flow using Farneback's method
     flow = cv.calcOpticalFlowFarneback(prev_gray, curr_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
@@ -180,7 +175,7 @@ while cap.isOpened():
     for x1, y1, x2, y2 in rects:
         cv.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Draw the optical flow
+    # Draw results
     ...
 
 # Release the video capture and video write objects
@@ -305,13 +300,58 @@ https://user-images.githubusercontent.com/56064033/229830610-7b3d5b42-8f1c-4b38-
 
 ### 2.2 GrabCut
 
-TODO
+Segmentáciu pomocou metódy *GrabCut* som implementoval dvoma spôsobmi:
+- vytvorenie masky cez preprocessing obrázku
+- vytvorenie masky za pomoci interaktívneho vstupu od používateľa
+
+Pri prvom spôsobe som použil preprocessing aby som získal masku, ktorú používam pre GrabCut segmentácii.
+V rámci tohto preprocessingu robím nad obrazom thresholding, morfologické operácie a odčítanie medzi dvoma obrázkami.
+Medzivýsledky z tohto preprocessingu sú znázornené aj na obrázkoch nižšie.
+Celý postup segmentácie aj s preprocessingom je nasledovný:
+
+1. V prvom kroku si spravím threshold s vlastnou nastavenou hodnotou *t*.
+2. V druhom kroku spravím threshold pomocou metódy *OTSU*.
+3. Takto získam dve rôzne masky, ktoré upravím morfologickými operáciami.
+4. Následne si spravím rozdiel medzi týmito dvoma maskami.
+5. Na získanom obraze rozdielu aplikujem *distance transform*.
+6. Nad týmto obrázkom spravím opäť threshold s vlastnou nastavenou hodnotou.
+7. Týmito krokmi získam tretiu masku, ktorú naplním hodnotami `cv.GC_FGD` a `cv.GC_PR_BGD` a použijem ju pre GrabCut segmentáciu.
+8. Zavolám funkciu `cv.grabCut()` a získam masku pre segmentované objekty.
+9. Na záver túto masku použijem na vyextrahovanie objektov.
+
+Časti mozgu sa týmto spôsobom dali celkom pekne segmentovať, až na pár výnimiek.
+Z piatich obrázkov, na ktorých som vyskúšal túto metódu som úspešne segmentoval štyri.
+Neúspech bol v prípade druhého obrázku, kde sa okrem cielenej oblasti vysegmentovala aj väčšia časť mozgu pod cieľovou oblasťou.
+Finálne výsledky môžeme vidieť na nasledujúcich obrázkoch:
 
 ![grabcut 1](output/grabcut-1.png)
-![grabcut 1](output/grabcut-2.png)
-![grabcut 1](output/grabcut-3.png)
-![grabcut 1](output/grabcut-4.png)
-![grabcut 1](output/grabcut-5.png)
+![grabcut 2](output/grabcut-2.png)
+![grabcut 3](output/grabcut-3.png)
+![grabcut 4](output/grabcut-4.png)
+![grabcut 5](output/grabcut-5.png)
+
+Keďže bolo zdĺhavé zakaždým nastavovať vlastné hodnoty pre thresholding, tak som si vytvoril aj druhú funkciu s názvom `interactive_grabcut()` pre interaktívnu *GrabCut* segmentáciu.
+Pri tejto metóde si používateľ môže sám pomocou myši označiť objekty, ktoré chce segmentovať.
+Kód na segmentáciu je pomerne jednoduchý:
+
+```python
+mask = np.where(user_mask == 255, cv.GC_FGD, cv.GC_PR_BGD).astype('uint8')
+
+bgd_model = np.zeros((1, 65), np.float64)
+fgd_model = np.zeros((1, 65), np.float64)
+cv.grabCut(image, mask, None, bgd_model, fgd_model, num_iterations, cv.GC_INIT_WITH_MASK)
+
+mask_ventricles = np.where((mask == cv.GC_PR_BGD) | (mask == cv.GC_BGD), 0, 1).astype('uint8')
+segmented_image = image * mask_ventricles[:, :, np.newaxis]
+```
+
+Na nasledujúcich obrázkoch z interaktívnej segmentácie je vidno, že táto metóda dosiahla lepšie výsledky ako metóda s preprocessingom.
+
+![interactive grabcut 1](output/interactive-grabcut-1.png)
+![interactive grabcut 2](output/interactive-grabcut-2.png)
+![interactive grabcut 3](output/interactive-grabcut-3.png)
+![interactive grabcut 4](output/interactive-grabcut-4.png)
+![interactive grabcut 5](output/interactive-grabcut-5.png)
 
 
 ### 2.3 VOC12
