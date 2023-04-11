@@ -345,7 +345,17 @@ mask_ventricles = np.where((mask == cv.GC_PR_BGD) | (mask == cv.GC_BGD), 0, 1).a
 segmented_image = image * mask_ventricles[:, :, np.newaxis]
 ```
 
-Na nasledujúcich obrázkoch z interaktívnej segmentácie je vidno, že táto metóda dosiahla lepšie výsledky ako metóda s preprocessingom.
+Pri interaktívnej segmentácii má používateľ dostupné nasledovné možnosti cez klávesnicu:
+- `left_click` - kreslenie masky
+- `g` - spustenie GrabCut segmentácie
+- `n` a `p` - prechod na ďalší/predchádzajúci obrázok
+- `s` a `l` - uloženie alebo nahratie uloženej masky
+- `c` - vyčistenie masky
+- `b` - zmena farby štetca na zmazanie čiar
+- `+` a `-` - zväčšenie alebo zmenšenie veľkosti štetca
+- `q` - ukončenie programu
+
+Na nasledujúcich obrázkoch je vidno, že interaktívna segmentácia dosiahla lepšie výsledky ako metóda s preprocessingom.
 
 ![interactive grabcut 1](output/interactive-grabcut-1.png)
 ![interactive grabcut 2](output/interactive-grabcut-2.png)
@@ -354,5 +364,38 @@ Na nasledujúcich obrázkoch z interaktívnej segmentácie je vidno, že táto m
 ![interactive grabcut 5](output/interactive-grabcut-5.png)
 
 
-### 2.3 VOC12
+### 2.3 VOC12 (optional)
+
+V rámci tohto bodu som sa pokúsil použiť predchádzajúcu *GrabCut* segmentáciu na obrázky z datasetu *VOC12*.
+Funkciu som však trochu zmodifikoval, aby používateľ mohol prepínať medzi štyrmi režimami (`GC_FGD`, `GC_PR_FGD`, `GC_BGD`, `GC_PR_BGD`) pri vytváraní masky.
+Pre zistenie úspešnosti som implementoval metriku *Dice Score*.
+
+```python
+def dice_score(img1, img2, segment_color=None):
+    assert img1.shape == img2.shape, 'Image shapes do not match'
+
+    # Get the segment with the specified color
+    if segment_color is not None:
+        img1 = (img1 == segment_color).astype(np.uint8)
+        img2 = (img2 == segment_color).astype(np.uint8)
+
+    # Convert to binary
+    img1 = (img1 > 0).astype(np.uint8)
+    img2 = (img2 > 0).astype(np.uint8)
+
+    # Compute the dice score
+    intersection = np.sum(img1 * img2)
+    return 2 * intersection / (np.sum(img1) + np.sum(img2))
+```
+
+Po implementovaní *Dice* metriky som sa pokúsil manuálne označiť objekty, ktoré chcem segmentovať a dosiahol som takéto výsledky:
+
+Obrázok 1 - Dice score: **0.371**
+![VOC12 1](output/voc-1.png)
+Obrázok 2 - Dice score: **0.442**
+![VOC12 2](output/voc-2.png)
+Obrázok 3 - Dice score: **0.466**
+![VOC12 3](output/voc-3.png)
+Obrázok 4 - Dice score: **0.402**
+![VOC12 4](output/voc-4.png)
 
