@@ -265,7 +265,7 @@ cv.destroyAllWindows()
 Výsledky z metódy *Accumulated Weighted Image* sú zobrazené na nasledujúcich videách.
 Každé video má 4 oblasti.
 Ľavá horná časť zobrazuje pôvodné video, ľavá dolná časť zobrazuje vypočítané pozadie.
-Na pravej hornej časti je maska pre objekty v popradí a na pravej dolnej časti sú znázornené objekty, ktoré som získal aplikovaní masky na pôvodné video.
+Na pravej hornej časti je maska pre objekty v popredí a na pravej dolnej časti sú znázornené objekty, ktoré som získal aplikovaní masky na pôvodné video.
 
 https://user-images.githubusercontent.com/56064033/229830230-3cd34ee7-2f80-4296-b766-bdbfab45ca54.mp4
 
