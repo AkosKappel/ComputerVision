@@ -10,6 +10,13 @@
 
 **Použité knižnice:** OpenCV, Matplotlib, Numpy
 
+**Obsah súborov v adresári:**
+
+* [motion_tracking.ipynb](motion_tracking.ipynb) - Jupyter notebook s implementáciou metód na sledovanie pohybu objektov
+* [background_subtraction.ipynb](background_subtraction.ipynb) - Jupyter notebook s implementáciou metód na odstránenie pozadia
+* [grabcut.ipynb](grabcut.ipynb) - Jupyter notebook s GrabCut algoritmom na segmentáciu obrázkov
+* [voc12.ipynb](voc12.ipynb) - Jupyter notebook s GrabCut a Superpixel algoritmami na segmentáciu obrázkov
+
 
 
 ## 1 Motion tracking
@@ -85,7 +92,11 @@ Výsledky z tejto metódy sú nasledovné:
 
 https://user-images.githubusercontent.com/56064033/229316910-2a8e27e6-8a6b-4a30-be19-c0cc7d7c1eb2.mp4
 
+---
+
 https://user-images.githubusercontent.com/56064033/229316968-6f040cda-bc37-417b-a733-36e9936250d0.mp4
+
+---
 
 https://user-images.githubusercontent.com/56064033/229316841-afa858f0-94f5-41c2-b6f2-fd4075c6e61d.mp4
 
@@ -97,7 +108,11 @@ Na nasledujúcich troch videách je ukážka výsledkov s pridanou maskou na vý
 
 https://user-images.githubusercontent.com/56064033/229512109-f0ce759e-d0ab-4cdd-b1f5-529365f5f65e.mp4
 
+---
+
 https://user-images.githubusercontent.com/56064033/229512255-d9f53257-f8a3-45e9-9c74-9b2390179566.mp4
+
+---
 
 https://user-images.githubusercontent.com/56064033/229512298-0ad1026f-af0b-4ba2-8c60-811105faa6fb.mp4
 
@@ -187,7 +202,11 @@ Získané výsledky sú nasledovné:
 
 https://user-images.githubusercontent.com/56064033/229513257-589d4aee-d02c-4cde-b22f-f73458071323.mp4
 
+---
+
 https://user-images.githubusercontent.com/56064033/229513295-ed031ab9-a0b2-4235-825d-e54d4b6c37f1.mp4
+
+---
 
 https://user-images.githubusercontent.com/56064033/229513331-62e7f449-b320-427a-ab3b-f4b175c8934f.mp4
 
@@ -250,7 +269,11 @@ Na pravej hornej časti je maska pre objekty v popradí a na pravej dolnej čast
 
 https://user-images.githubusercontent.com/56064033/229830230-3cd34ee7-2f80-4296-b766-bdbfab45ca54.mp4
 
+---
+
 https://user-images.githubusercontent.com/56064033/229830439-7184f68a-d723-4cae-b6f8-07b660091b6a.mp4
+
+---
 
 https://user-images.githubusercontent.com/56064033/229830574-a4f9eb17-a027-41a8-bffe-51929f9369eb.mp4
 
@@ -293,7 +316,11 @@ Výsledky z metódy *Mixtures of Gaussians* sú takéto:
 
 https://user-images.githubusercontent.com/56064033/229830282-c00b46e1-3fa7-4f9b-956c-202870917349.mp4
 
+---
+
 https://user-images.githubusercontent.com/56064033/229830533-d56fd738-b54f-4202-91cc-5bc31cc11f0c.mp4
+
+---
 
 https://user-images.githubusercontent.com/56064033/229830610-7b3d5b42-8f1c-4b38-97e0-d7269384d456.mp4
 
@@ -309,25 +336,30 @@ V rámci tohto preprocessingu robím nad obrazom thresholding, morfologické ope
 Medzivýsledky z tohto preprocessingu sú znázornené aj na obrázkoch nižšie.
 Celý postup segmentácie aj s preprocessingom je nasledovný:
 
-1. V prvom kroku si spravím threshold s vlastnou nastavenou hodnotou *t*.
-2. V druhom kroku spravím threshold pomocou metódy *OTSU*.
-3. Takto získam dve rôzne masky, ktoré upravím morfologickými operáciami.
-4. Následne si spravím rozdiel medzi týmito dvoma maskami.
-5. Na získanom obraze rozdielu aplikujem *distance transform*.
-6. Nad týmto obrázkom spravím opäť threshold s vlastnou nastavenou hodnotou.
-7. Týmito krokmi získam tretiu masku, ktorú naplním hodnotami `cv.GC_FGD` a `cv.GC_PR_BGD` a použijem ju pre GrabCut segmentáciu.
-8. Zavolám funkciu `cv.grabCut()` a získam masku pre segmentované objekty.
-9. Na záver túto masku použijem na vyextrahovanie objektov.
+1. V prvom kroku si spravím threshold nad obrazom *(a)* s vlastnou nastavenou hodnotou *t*. Týmto krokom získam prvú masku *(b)*.
+2. V druhom kroku spravím threshold pomocou metódy *OTSU* a získam druhú masku *(c)*.
+3. Získané dve masky upravím morfologickými operáciami a následne si spravím rozdiel medzi týmito dvoma maskami *(d)*.
+4. Na získanom obraze rozdielu aplikujem *distance transform* *(e)*.
+5. Nad týmto obrázkom spravím opäť threshold s vlastnou nastavenou hodnotou *t* z intervalu [0, 1] a získam *(f)*.
+6. Výsledný obraz naplním hodnotami `cv.GC_FGD` a `cv.GC_PR_BGD` a použijem ju pre GrabCut segmentáciu.
+7. Zavolám funkciu `cv.grabCut()` a získam masku pre segmentované objekty *(g)*.
+8. Na záver túto masku použijem na vyextrahovanie cieľového objektu *(h)*.
 
 Časti mozgu sa týmto spôsobom dali celkom pekne segmentovať, až na pár výnimiek.
-Z piatich obrázkov, na ktorých som vyskúšal túto metódu som úspešne segmentoval štyri.
-Neúspech bol v prípade druhého obrázku, kde sa okrem cielenej oblasti vysegmentovala aj väčšia časť mozgu pod cieľovou oblasťou.
+Pre každý jeden segmentovaný obrázok som upravil hodnotu *t* a ďalšie parametre tak, aby som získal čo najlepší výsledok.
+Z piatich obrázkov, na ktorých som aplikoval túto metódu som úspešne segmentoval štyri.
+Neúspech bol v prípade druhého obrázku, kde sa okrem cielenej oblasti vysegmentovala aj väčšia časť mozgu pod cielenou oblasťou.
 Finálne výsledky môžeme vidieť na nasledujúcich obrázkoch:
 
+Obrázok 1:
 ![grabcut 1](output/grabcut-1.png)
+Obrázok 2:
 ![grabcut 2](output/grabcut-2.png)
+Obrázok 3:
 ![grabcut 3](output/grabcut-3.png)
+Obrázok 4:
 ![grabcut 4](output/grabcut-4.png)
+Obrázok 5:
 ![grabcut 5](output/grabcut-5.png)
 
 Keďže bolo zdĺhavé zakaždým nastavovať vlastné hodnoty pre thresholding, tak som si vytvoril aj druhú funkciu s názvom `interactive_grabcut()` pre interaktívnu *GrabCut* segmentáciu.
@@ -345,22 +377,30 @@ mask_ventricles = np.where((mask == cv.GC_PR_BGD) | (mask == cv.GC_BGD), 0, 1).a
 segmented_image = image * mask_ventricles[:, :, np.newaxis]
 ```
 
-Pri interaktívnej segmentácii má používateľ dostupné nasledovné možnosti cez klávesnicu:
-- `left_click` - kreslenie masky
+Pri interaktívnej segmentácii má používateľ dostupné nasledovné možnosti cez klávesnicu a myš:
+- `left click` - kreslenie masky
 - `g` - spustenie GrabCut segmentácie
 - `n` a `p` - prechod na ďalší/predchádzajúci obrázok
 - `s` a `l` - uloženie alebo nahratie uloženej masky
 - `c` - vyčistenie masky
-- `b` - zmena farby štetca na zmazanie čiar
+- `b` - prepínanie medzi farbou štetca (na kreslenie alebo mazanie čiar)
 - `+` a `-` - zväčšenie alebo zmenšenie veľkosti štetca
 - `q` - ukončenie programu
 
 Na nasledujúcich obrázkoch je vidno, že interaktívna segmentácia dosiahla lepšie výsledky ako metóda s preprocessingom.
+Pri kreslení segmentačnej masky som vyskúšal rôzne spôsoby ako rozlične by sa dal vyznačiť cieľový objekt.
+Vyskúšal som napríklad vyznačiť rovnou čiarom iba časť segmentovaného mozgu, umiestnil som iba pár malých bodov na mozgu, zvýraznil som iba jednu stranu mozgu, a ešte som skúsil označiť skoro celú oblasť, ktorú som chcel segmentovať.
+Výsledky boli pri každom z týchto pokusov výborné.
 
+Obrázok 1 - dvoma dlhými čiarami označená časť mozgu:
 ![interactive grabcut 1](output/interactive-grabcut-1.png)
+Obrázok 2 - tromi bodmi označená oblasť mozgu:
 ![interactive grabcut 2](output/interactive-grabcut-2.png)
+Obrázok 3 - dvoma krátkymi čiarami označená časť mozgu:
 ![interactive grabcut 3](output/interactive-grabcut-3.png)
+Obrázok 4 - zvýraznená iba malá časť na jednej strane:
 ![interactive grabcut 4](output/interactive-grabcut-4.png)
+Obrázok 5 - označená skoro celá segmentovaná oblasť:
 ![interactive grabcut 5](output/interactive-grabcut-5.png)
 
 
