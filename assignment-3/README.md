@@ -353,12 +353,16 @@ Finálne výsledky môžeme vidieť na nasledujúcich obrázkoch:
 
 Obrázok 1:
 ![grabcut 1](output/grabcut-1.png)
+
 Obrázok 2:
 ![grabcut 2](output/grabcut-2.png)
+
 Obrázok 3:
 ![grabcut 3](output/grabcut-3.png)
+
 Obrázok 4:
 ![grabcut 4](output/grabcut-4.png)
+
 Obrázok 5:
 ![grabcut 5](output/grabcut-5.png)
 
@@ -394,12 +398,16 @@ Výsledky boli pri každom z týchto pokusov výborné.
 
 Obrázok 1 - dvoma dlhými čiarami označená časť mozgu:
 ![interactive grabcut 1](output/interactive-grabcut-1.png)
+
 Obrázok 2 - tromi bodmi označená oblasť mozgu:
 ![interactive grabcut 2](output/interactive-grabcut-2.png)
+
 Obrázok 3 - dvoma krátkymi čiarami označená časť mozgu:
 ![interactive grabcut 3](output/interactive-grabcut-3.png)
+
 Obrázok 4 - zvýraznená iba malá časť na jednej strane:
 ![interactive grabcut 4](output/interactive-grabcut-4.png)
+
 Obrázok 5 - označená skoro celá segmentovaná oblasť:
 ![interactive grabcut 5](output/interactive-grabcut-5.png)
 
@@ -432,10 +440,13 @@ Po implementovaní *Dice* metriky som sa pokúsil manuálne označiť objekty, k
 
 Obrázok 1 - Dice score: **0.371**
 ![VOC12 1](output/voc-1.png)
+
 Obrázok 2 - Dice score: **0.442**
 ![VOC12 2](output/voc-2.png)
+
 Obrázok 3 - Dice score: **0.466**
 ![VOC12 3](output/voc-3.png)
+
 Obrázok 4 - Dice score: **0.402**
 ![VOC12 4](output/voc-4.png)
 
