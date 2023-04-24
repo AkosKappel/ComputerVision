@@ -59,6 +59,7 @@ def UNet(input_shape, num_classes: int = 1, num_filters: int = 32, final_activat
                                           |               ^
                                           v               |
                                         pool4    ->    bridge
+    (+) means concatenation
     """
     filters = [num_filters * 2 ** i for i in range(5)]  # [32, 64, 128, 256, 512]
     inputs = layers.Input(shape=input_shape)
@@ -93,6 +94,23 @@ def UNet(input_shape, num_classes: int = 1, num_filters: int = 32, final_activat
 
 def UNetPlusPlus(input_shape, num_classes: int = 1, num_filters: int = 32, deep_supervision=False,
                  final_activation='sigmoid', **kwargs):
+    """                                      (Deep supervision)
+                                  ----------------------------------------
+                                  |            |            |            |
+    input -> pool1, conv1_1 -> conv1_2  ->  conv1_3  ->  conv1_4  ->  conv1_5 -> output
+               |                  ^            ^            ^            ^
+               v                /            /            /            /
+             pool1 -> pool2, conv2_1  ->  conv2_2  ->  conv2_3  ->  conv2_4
+                        |                  ^            ^            ^
+                        v                /            /            /
+                      pool2 -> pool3, conv3_1  ->  conv3_2  ->  conv3_3
+                                 |                  ^            ^
+                                 v                /            /
+                               pool3 -> pool4, conv4_1 -> conv4_2
+                                          |                 ^
+                                          v               /
+                                        pool4   ->   conv5_1
+    """
     filters = [num_filters * 2 ** i for i in range(5)]
     inputs = layers.Input(shape=input_shape)
 
@@ -153,6 +171,21 @@ def UNetPlusPlus(input_shape, num_classes: int = 1, num_filters: int = 32, deep_
 
 def UNet3Plus(input_shape, num_classes: int = 1, num_filters: int = 32, deep_supervision=False,
               final_activation='sigmoid', **kwargs):
+    """
+    input -> pool1, conv1 -> ...                                 up1 -> output
+               |                                                 ^
+               v                                                /
+             pool1 -> pool2, conv2 -> ...                     up2
+                        |                                     ^
+                        v                                    /
+                      pool2 -> pool3, conv3 -> ...         up3
+                                 |                         ^
+                                 v                        /
+                               pool3 -> pool4, conv4 -> up4
+                                          |             ^
+                                          v            /
+                                        pool4   ->   conv5
+    """
     filters = [num_filters * 2 ** i for i in range(5)]
     inputs = layers.Input(shape=input_shape)
 
@@ -301,11 +334,21 @@ def RSB(input_tensor, kernel_size, filters, strides=1, skip=True):
     return x
 
 
-def SuimEncoder(input_shape):
+def SuimNet(input_shape, num_classes, **kwargs):
+    def concat_skip(layer_input, skip_input, filters, f_size=3):
+        u = layers.Conv2D(filters, (f_size, f_size), strides=1, padding='same', activation='relu')(layer_input)
+        u = layers.BatchNormalization(momentum=0.8)(u)
+        u = layers.Concatenate()([u, skip_input])
+        return u
+
+    # Input
     inputs = layers.Input(shape=input_shape)
+
+    # Encoder
     # First encoder block
     x = layers.Conv2D(64, (5, 5), strides=1)(inputs)
     encoded1 = x
+
     # Second encoder block
     x = layers.BatchNormalization(momentum=0.8)(x)
     x = layers.Activation('relu')(x)
@@ -314,25 +357,16 @@ def SuimEncoder(input_shape):
     x = RSB(x, kernel_size=3, filters=[64, 64, 128, 128], strides=1, skip=True)
     x = RSB(x, kernel_size=3, filters=[64, 64, 128, 128], strides=1, skip=True)
     encoded2 = x
+
     # Third encoder block
     x = RSB(x, kernel_size=3, filters=[128, 128, 256, 256], strides=2, skip=False)
     x = RSB(x, kernel_size=3, filters=[128, 128, 256, 256], strides=1, skip=True)
     x = RSB(x, kernel_size=3, filters=[128, 128, 256, 256], strides=1, skip=True)
     x = RSB(x, kernel_size=3, filters=[128, 128, 256, 256], strides=1, skip=True)
     encoded3 = x
-    # Encoder output
-    return inputs, [encoded1, encoded2, encoded3]
 
-
-def SuimDecoder(encoded_inputs, num_classes):
-    def concat_skip(layer_input, skip_input, filters, f_size=3):
-        u = layers.Conv2D(filters, (f_size, f_size), strides=1, padding='same', activation='relu')(layer_input)
-        u = layers.BatchNormalization(momentum=0.8)(u)
-        u = layers.Concatenate()([u, skip_input])
-        return u
-
+    # Decoder
     # First decoder block
-    encoded1, encoded2, encoded3 = encoded_inputs
     decoded1 = layers.Conv2D(256, (3, 3), padding='same')(encoded3)
     decoded1 = layers.BatchNormalization(momentum=0.8)(decoded1)
     decoded1 = layers.UpSampling2D((2, 2))(decoded1)
@@ -342,6 +376,7 @@ def SuimDecoder(encoded_inputs, num_classes):
     encoded2 = layers.Lambda(lambda x: x[:, :-1, :-1, :])(encoded2)
     encoded2 = layers.ZeroPadding2D((1, 1))(encoded2)
     decoded1_skip = concat_skip(encoded2, decoded1, 256)
+
     # Second decoder block
     decoded2 = layers.Conv2D(256, (3, 3), strides=1, padding='same')(decoded1_skip)
     decoded2 = layers.BatchNormalization(momentum=0.8)(decoded2)
@@ -352,23 +387,15 @@ def SuimDecoder(encoded_inputs, num_classes):
     # Padding to match dimensions
     encoded1 = layers.ZeroPadding2D((2, 2))(encoded1)
     decoded2_skip = concat_skip(encoded1, decoded2_skip, 128)
+
     # Third decoder block
     decoded3 = layers.Conv2D(128, (3, 3), strides=1, padding='same')(decoded2_skip)
     decoded3 = layers.BatchNormalization()(decoded3)
     decoded3_skip = layers.Conv2D(64, (3, 3), strides=1, padding='same')(decoded3)
     decoded3_skip = layers.BatchNormalization(momentum=0.8)(decoded3_skip)
-    # Decoder output
+
+    # Output
     output = layers.Conv2D(num_classes, (3, 3), strides=1, padding='same', activation='sigmoid')(decoded3_skip)
-    return output
 
-
-def SuimNet(input_shape, num_classes):
-    inputs, encoded_inputs = SuimEncoder(input_shape)
-    output = SuimDecoder(encoded_inputs, num_classes)
-    model = keras.Model(input=inputs, output=output, name='SuimNet')
-    model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=1e-4),
-        loss='binary_crossentropy',
-        metrics=['accuracy'],
-    )
+    model = keras.Model(inputs=inputs, outputs=output, name='SuimNet')
     return model
