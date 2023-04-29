@@ -663,7 +663,92 @@ def UNet3Plus(input_shape, num_classes: int = 1, num_filters: int = 32, deep_sup
     return model
 
 
-# TODO: attention gate
+def gating_signal(input_tensor, n_filters, batchnorm=False):
+    x = layers.Conv2D(n_filters, (1, 1), padding='same')(input_tensor)
+    if batchnorm:
+        x = layers.BatchNormalization()(x)
+    x = layers.ReLU()(x)
+    return x
+
+
+# e.g. (None, 256, 256, 6) -> rep=2, axis=3 -> (None, 256, 256, 3)
+def repeat_elem(tensor, rep, axis=-1):
+    return layers.Lambda(lambda x, r: K.repeat_elements(x, r, axis=axis), arguments={'r': rep})(tensor)
+
+
+def attention_block(input_tensor, gating_tensor, n_filters):
+    input_shape = K.int_shape(input_tensor)
+    gating_shape = K.int_shape(gating_tensor)
+
+    # Change input signal to the same shape as the gating signal
+    theta_input = layers.Conv2D(n_filters, (2, 2), strides=(2, 2), padding='same')(input_tensor)
+    theta_input_shape = K.int_shape(theta_input)
+
+    # Change the gating signal to the same number of filters as the input signal
+    phi_gating = layers.Conv2D(n_filters, (1, 1), strides=(1, 1), padding='same')(gating_tensor)
+    sx = theta_input_shape[1] // gating_shape[1]
+    sy = theta_input_shape[2] // gating_shape[2]
+    up_gating = layers.Conv2DTranspose(n_filters, (3, 3), strides=(sx, sy), padding='same')(phi_gating)
+
+    # Add the input and gating signals
+    input_gating = layers.add([up_gating, theta_input])
+    input_gating = layers.Activation('relu')(input_gating)
+    input_gating = layers.Conv2D(1, (1, 1), padding='same')(input_gating)
+    input_gating = layers.Activation('sigmoid')(input_gating)
+    input_gating_shape = K.int_shape(input_gating)
+    sx = input_shape[1] // input_gating_shape[1]
+    sy = input_shape[2] // input_gating_shape[2]
+    input_gating = layers.UpSampling2D((sx, sy))(input_gating)
+    input_gating = repeat_elem(input_gating, input_shape[3])
+
+    output = layers.multiply([input_gating, input_tensor])
+    output = layers.Conv2D(input_shape[3], (1, 1), padding='same')(output)
+    output = layers.BatchNormalization()(output)
+
+    return output
+
+
+def attention_decoder_block(bottom_tensor, skip_tensor, n_filters, kernel_size, upsample_size, dropout, batchnorm):
+    gating = gating_signal(bottom_tensor, n_filters=n_filters, batchnorm=batchnorm)
+    attention = attention_block(skip_tensor, gating, n_filters=n_filters)
+    up = layers.UpSampling2D((upsample_size, upsample_size))(bottom_tensor)
+    up = layers.concatenate([up, attention], axis=-1)
+    up = conv_block(up, n_filters=n_filters, kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    return up
+
+
+def Attention_UNet(input_shape, num_classes: int = 1, num_filters: int = 32, dropout: float = 0.0, batchnorm=True,
+                   final_activation='sigmoid'):
+    filters = [num_filters * 2 ** i for i in range(5)]  # [32, 64, 128, 256, 512]
+    kernel_size = 3  # size of the convolutional filter
+    upsample_size = 2  # size of upsampling filters
+
+    # Input layer
+    inputs = layers.Input(shape=input_shape, dtype=tf.float32)
+
+    # Encoder
+    conv1, pool1 = encoder_block(inputs, filters[0], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    conv2, pool2 = encoder_block(pool1, filters[1], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    conv3, pool3 = encoder_block(pool2, filters[2], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    conv4, pool4 = encoder_block(pool3, filters[3], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+
+    # Bottom
+    conv5 = conv_block(pool4, filters[4], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+
+    # Decoder
+    up1 = attention_decoder_block(conv5, conv4, filters[3], kernel_size, upsample_size, dropout, batchnorm)
+    up2 = attention_decoder_block(up1, conv3, filters[2], kernel_size, upsample_size, dropout, batchnorm)
+    up3 = attention_decoder_block(up2, conv2, filters[1], kernel_size, upsample_size, dropout, batchnorm)
+    up4 = attention_decoder_block(up3, conv1, filters[0], kernel_size, upsample_size, dropout, batchnorm)
+
+    # Output layer
+    outputs = layers.Conv2D(num_classes, kernel_size=(1, 1))(up4)
+    outputs = layers.BatchNormalization(axis=-1)(outputs)
+    outputs = layers.Activation(final_activation)(outputs)
+
+    # Model integration
+    model = keras.Model(inputs=inputs, outputs=outputs, name='Attention_U-Net')
+    return model
 
 
 # Residual Skip Block
