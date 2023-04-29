@@ -1,7 +1,362 @@
+import albumentations as A
+import cv2 as cv
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import tensorflow as tf
+import tensorflow.keras.backend as K
+import wandb
+from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras import regularizers
 
+# ------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------
+
+CLASS_NAMES = [
+    'Background (waterbody)', 'Human divers', 'Aquatic plants and sea-grass',
+    'Wrecks and ruins', 'Robots (AUVs/ROVs/instruments)', 'Reefs and invertebrates',
+    'Fish and vertebrates', 'Sea-floor and rocks',
+]
+NUM_CLASSES = len(CLASS_NAMES)
+CLASS_TO_COLOR = {
+    0: (0, 0, 0),  # Black
+    1: (0, 0, 1),  # Blue
+    2: (0, 1, 0),  # Green
+    3: (0, 1, 1),  # Sky
+    4: (1, 0, 0),  # Red
+    5: (1, 0, 1),  # Pink
+    6: (1, 1, 0),  # Yellow
+    7: (1, 1, 1),  # White
+}
+COLOR_TO_CLASS = {v: k for k, v in CLASS_TO_COLOR.items()}
+CLASS_COLORS = np.array([list(color) for color in CLASS_TO_COLOR.values()])
+CLASS_WEIGHTS = np.array([1.06, 14.62, 15.72, 5.10, 44.18, 1.00, 4.78, 2.42])
+
+_BATCH_SIZE = 4
+_HEIGHT = 480
+_WIDTH = 640
+_CHANNELS = 3
+
+
+# ------------------------------------------------------------
+# Utilities
+# ------------------------------------------------------------
+
+def list_files(path):
+    content = os.listdir(path)
+    # Get only files (not directories)
+    files = [os.path.join(path, f) for f in content if os.path.isfile(os.path.join(path, f))]
+    # Ensure the lists are sorted to match the corresponding image and mask
+    files.sort()
+    return files
+
+
+def load_image(path):
+    # Read RGB image
+    image = cv.imread(path, cv.IMREAD_COLOR)
+    image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+    # Resize
+    image = cv.resize(image, (_WIDTH, _HEIGHT), interpolation=cv.INTER_LINEAR)
+    # Normalize
+    image = (image / 255.0).astype(np.float32)
+    return image
+
+
+def load_mask(path):
+    # Read RGB mask
+    mask = cv.imread(path, cv.IMREAD_COLOR)
+    mask = cv.cvtColor(mask, cv.COLOR_BGR2RGB)
+    # Resize
+    mask = cv.resize(mask, (_WIDTH, _HEIGHT), interpolation=cv.INTER_NEAREST)
+    # Fix rounding errors
+    mask = np.where(mask > 127, 1, 0)
+    # Convert to one-hot encoding
+    one_hot_mask = []
+    for color in COLOR_TO_CLASS:
+        mask_slice = np.all(np.equal(mask, color), axis=-1)
+        one_hot_mask.append(mask_slice)
+    one_hot_mask = np.stack(one_hot_mask, axis=-1).astype(np.float32)
+    return one_hot_mask
+
+
+# Encode RGB mask to class indices in range [0, num_classes - 1]
+def rgb_to_class_indices(mask):
+    class_colors_tensor = tf.constant(CLASS_COLORS, dtype=tf.float32)
+    # Calculate the similarity between the RGB mask and class colors
+    similarity = tf.reduce_sum(tf.abs(tf.subtract(mask, class_colors_tensor[:, None, None, :])), axis=-1)
+    # Find the index of the class color with the minimum similarity
+    class_indices_mask = tf.argmin(similarity, axis=0)
+    return class_indices_mask
+
+
+# One-hot encode class indices mask (e.g. [1, 3, 0] -> [[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0]])
+def class_indices_to_one_hot(mask):
+    one_hot_mask = tf.one_hot(mask, NUM_CLASSES, dtype=tf.int32)
+    one_hot_mask = tf.cast(one_hot_mask, tf.float32)
+    return one_hot_mask
+
+
+# Encode RGB mask to one-hot mask (e.g. [[0, 0, 1], [1, 0, 0]] -> [[0, 1, 0, 0], [1, 0, 0, 0]])
+def rgb_to_one_hot(mask):
+    indices = rgb_to_class_indices(mask)
+    one_hot_mask = class_indices_to_one_hot(indices)
+    return one_hot_mask
+
+
+# Decode one-hot mask to RGB mask
+def class_indices_to_rgb(mask):
+    class_colors_tensor = tf.constant(CLASS_COLORS, dtype=tf.float32)
+    # Get the RGB color for each pixel from the class color
+    rgb_mask = tf.gather(class_colors_tensor, tf.cast(mask, tf.int32))
+    return rgb_mask
+
+
+def one_hot_to_class_indices(mask):
+    indices = tf.argmax(mask, axis=-1)
+    return indices
+
+
+def one_hot_to_rgb(mask):
+    indices = one_hot_to_class_indices(mask)
+    rgb_mask = class_indices_to_rgb(indices)
+    return rgb_mask
+
+
+def visualize_pair(image, mask, mask_type='rgb'):
+    if mask_type == 'rgb':
+        pass
+    elif mask_type == 'one-hot':
+        mask = one_hot_to_rgb(mask)
+    elif mask_type == 'class-indices':
+        mask = class_indices_to_rgb(mask)
+    else:
+        raise ValueError(f'Unknown mask type: {mask_type}')
+    mask = mask.numpy().astype(np.uint8)
+    mask *= 255
+
+    plt.figure(figsize=(10, 5))
+    plt.subplot(121)
+    plt.imshow(image)
+    plt.axis('off')
+    plt.subplot(122)
+    plt.imshow(mask)
+    plt.axis('off')
+    plt.show()
+
+
+Augmentation = A.Compose([
+    A.HorizontalFlip(p=0.5),
+    # A.VerticalFlip(p=0.5),
+    A.Rotate(limit=45, p=0.75, interpolation=cv.INTER_NEAREST, border_mode=cv.BORDER_REFLECT_101),
+    A.OneOf([
+        A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+        A.RandomGamma(gamma_limit=(80, 120), p=0.5),
+    ], p=0.75),
+    A.OneOf([
+        A.Blur(blur_limit=3, p=0.5),
+        A.MedianBlur(blur_limit=3, p=0.5),
+    ], p=0.75),
+])
+
+
+# Augment with tensorflow
+def augmentation(image, mask):
+    augmented = Augmentation(image=image, mask=mask)
+    image = augmented['image']
+    mask = augmented['mask']
+    return image, mask
+
+
+def preprocessing(image, mask, augment=False, preprocess_input=None):
+    def read(x, y):
+        image = load_image(x.decode())
+        mask = load_mask(y.decode())
+        if preprocess_input is not None:
+            image = preprocess_input(image)
+        if augment:
+            image, mask = augmentation(image, mask)
+        return image, mask
+
+    image, mask = tf.numpy_function(read, [image, mask], [tf.float32, tf.float32])
+    image.set_shape([_HEIGHT, _WIDTH, _CHANNELS])
+    mask.set_shape([_HEIGHT, _WIDTH, NUM_CLASSES])
+
+    return image, mask
+
+
+def load_dataset(path, val_split=0.2, seed=411,
+                 batch_size=4, height=240, width=320, channels=3,
+                 repeat=True, augment=True, preprocess=None):
+    global _HEIGHT, _WIDTH, _CHANNELS, _BATCH_SIZE
+    _HEIGHT, _WIDTH, _CHANNELS = height, width, channels
+    _BATCH_SIZE = batch_size
+
+    # Get file names
+    train_val_images = list_files(os.path.join(path, 'train_val/images'))
+    train_val_masks = list_files(os.path.join(path, 'train_val/masks'))
+    test_images = list_files(os.path.join(path, 'TEST/images'))
+    test_masks = list_files(os.path.join(path, 'TEST/masks'))
+
+    # Split to train and validation
+    train_images, val_images, train_masks, val_masks = train_test_split(
+        train_val_images, train_val_masks, test_size=val_split, random_state=seed
+    )
+
+    # Create datasets from file name pairs (image, mask)
+    train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_masks))
+    val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_masks))
+    test_dataset = tf.data.Dataset.from_tensor_slices((test_images, test_masks))
+
+    # Shuffle train dataset
+    train_dataset = train_dataset.shuffle(len(train_images))
+
+    # Preprocessing and augmentation
+    preprocess_train = lambda x, y: preprocessing(x, y, augment=augment, preprocess_input=preprocess)
+    preprocess_test = lambda x, y: preprocessing(x, y, augment=False, preprocess_input=preprocess)
+
+    train_dataset = train_dataset.map(preprocess_train, num_parallel_calls=tf.data.AUTOTUNE)
+    val_dataset = val_dataset.map(preprocess_test, num_parallel_calls=tf.data.AUTOTUNE)
+    test_dataset = test_dataset.map(preprocess_test, num_parallel_calls=tf.data.AUTOTUNE)
+
+    # Batch and prefetch
+    train_dataset = train_dataset.batch(_BATCH_SIZE)
+    val_dataset = val_dataset.batch(_BATCH_SIZE)
+    test_dataset = test_dataset.batch(_BATCH_SIZE)
+
+    train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
+    val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
+    test_dataset = test_dataset.prefetch(tf.data.AUTOTUNE)
+
+    # Repeat train dataset indefinitely
+    if repeat:
+        train_dataset = train_dataset.repeat()
+
+    # Return datasets
+    return train_dataset, val_dataset, test_dataset
+
+
+# ------------------------------------------------------------
+# Loss functions & metrics
+# ------------------------------------------------------------
+
+def iou_index(y_true, y_pred, smooth=1):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=[1, 2, 3])
+    union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3]) - intersection
+    iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
+    return iou
+
+
+def f_score(y_true, y_pred, smooth=1):
+    intersection = K.sum(y_true * y_pred, axis=[1, 2, 3])
+    union = K.sum(y_true, axis=[1, 2, 3]) + K.sum(y_pred, axis=[1, 2, 3])
+    dice = K.mean((2. * intersection + smooth) / (union + smooth), axis=0)
+    return dice
+
+
+# IoU = Jaccard index
+def jaccard_coef(y_true, y_pred, smooth: float = 1.0):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(K.abs(y_true_f * y_pred_f))
+    union = K.sum(y_true_f) + K.sum(y_pred_f) - intersection
+    return K.mean((intersection + smooth) / (union + smooth))
+
+
+# f1 score = Dice coefficient
+def dice_coef(y_true, y_pred, smooth: float = 1.0):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    area_true = K.sum(y_true_f)
+    area_pred = K.sum(y_pred_f)
+    return K.mean((2. * intersection + smooth) / (area_true + area_pred + smooth))
+
+
+def jaccard_loss(y_true, y_pred):
+    return 1.0 - jaccard_coef(y_true, y_pred)
+
+
+def dice_loss(y_true, y_pred):
+    return 1.0 - dice_coef(y_true, y_pred)
+
+
+def focal_loss(y_true, y_pred, gamma=2., alpha=4., epsilon=1.e-9):
+    y_true_c = tf.convert_to_tensor(y_true, tf.float32)
+    y_pred_c = tf.convert_to_tensor(y_pred, tf.float32)
+
+    model_out = tf.add(y_pred_c, epsilon)
+    ce = tf.multiply(y_true_c, -tf.math.log(model_out))
+    weight = tf.multiply(y_true_c, tf.pow(tf.subtract(1., model_out), gamma))
+    fl = tf.multiply(alpha, tf.multiply(weight, ce))
+
+    reduced_fl = tf.reduce_max(fl, axis=-1)
+    return tf.reduce_mean(reduced_fl)
+
+
+def hybrid_loss(y_true, y_pred):
+    j_loss = jaccard_loss(y_true, y_pred)
+    d_loss = dice_loss(y_true, y_pred)
+    f_loss = focal_loss(y_true, y_pred)
+    return j_loss + d_loss + f_loss
+
+
+# ------------------------------------------------------------
+# Callbacks
+# ------------------------------------------------------------
+
+class VisualizeProgress(tf.keras.callbacks.Callback):
+    def __init__(self, test_data, every_n_epochs=10, num_samples=4,
+                 convert_mask=None, deep_supervision=False, log=False):
+        super(VisualizeProgress, self).__init__()
+        self.test_data = test_data
+        self.every_n_epochs = every_n_epochs
+        self.num_samples = num_samples
+        self.convert_mask = convert_mask
+        self.deep_supervision = deep_supervision
+        self.log = log
+
+    def on_epoch_end(self, epoch, logs=None):
+        if (epoch + 1) % self.every_n_epochs == 0:
+            x_test, y_test = self.test_data
+            y_pred = self.model.predict(x_test[:self.num_samples])
+
+            if self.deep_supervision:  # take the last prediction if deep supervision is used
+                y_pred = y_pred[-1]
+
+            plt.figure(figsize=(9, 12))
+            for index in range(self.num_samples):
+                if index >= len(x_test): break
+
+                plt.subplot(self.num_samples, 3, index * 3 + 1)
+                if index == 0:
+                    plt.title('Input Image')
+                plt.imshow(x_test[index])
+
+                plt.subplot(self.num_samples, 3, index * 3 + 2)
+                if index == 0:
+                    plt.title('Ground Truth')
+                ground_truth = self.convert_mask(y_test[index]).numpy()
+                plt.imshow(ground_truth)
+
+                plt.subplot(self.num_samples, 3, index * 3 + 3)
+                if index == 0:
+                    plt.title('Predicted Segmentation')
+                prediction = self.convert_mask(y_pred[index]).numpy()
+                plt.imshow(prediction)
+
+            if self.log:
+                wandb.log({f'Segmentation results': wandb.Image(plt)})
+
+            plt.tight_layout()
+            plt.show()
+
+
+# ------------------------------------------------------------
+# Models & Building blocks
+# ------------------------------------------------------------
 
 # ConvBlock = [Conv2D -> BatchNorm -> Activation -> Dropout] * n_blocks
 def conv_block(
@@ -306,6 +661,9 @@ def UNet3Plus(input_shape, num_classes: int = 1, num_filters: int = 32, deep_sup
 
     model = keras.Model(inputs=inputs, outputs=outputs, name='UNet3Plus')
     return model
+
+
+# TODO: attention gate
 
 
 # Residual Skip Block
