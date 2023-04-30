@@ -354,6 +354,39 @@ class VisualizeProgress(tf.keras.callbacks.Callback):
             plt.show()
 
 
+def plot_history(history):
+    # Plot training history
+    plt.figure(figsize=(12, 8))
+
+    plt.subplot(221)
+    plt.title('Loss')
+    plt.plot(history.history['loss'], label='train')
+    plt.plot(history.history['val_loss'], label='val')
+    plt.legend()
+
+    plt.subplot(222)
+    plt.title('Accuracy')
+    plt.plot(history.history['accuracy'], label='train')
+    plt.plot(history.history['val_accuracy'], label='val')
+    plt.legend()
+
+    plt.subplot(223)
+    plt.title('Jaccard')
+    plt.plot(history.history['jaccard_coef'], label='train')
+    plt.plot(history.history['val_jaccard_coef'], label='val')
+    plt.legend()
+
+    plt.subplot(224)
+    plt.title('Dice')
+    plt.plot(history.history['dice_coef'], label='train')
+    plt.plot(history.history['val_dice_coef'], label='val')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig('training-history.png')
+    plt.show()
+
+
 # ------------------------------------------------------------
 # Models & Building blocks
 # ------------------------------------------------------------
@@ -708,23 +741,48 @@ def attention_block(input_tensor, gating_tensor, n_filters):
     return output
 
 
-def attention_decoder_block(bottom_tensor, skip_tensor, n_filters, kernel_size, upsample_size, dropout, batchnorm):
+def residual_conv_block(input_tensor, n_filters, kernel_size: int = 3, dropout: float = 0.0, batchnorm=False):
+    conv = layers.Conv2D(n_filters, (kernel_size, kernel_size), padding='same')(input_tensor)
+    if batchnorm:
+        conv = layers.BatchNormalization(axis=-1)(conv)
+    conv = layers.Activation('relu')(conv)
+
+    conv = layers.Conv2D(n_filters, (kernel_size, kernel_size), padding='same')(conv)
+    if batchnorm:
+        conv = layers.BatchNormalization(axis=-1)(conv)
+    if dropout > 0:
+        conv = layers.Dropout(dropout)(conv)
+
+    shortcut = layers.Conv2D(n_filters, (1, 1), padding='same')(input_tensor)
+    if batchnorm:
+        shortcut = layers.BatchNormalization(axis=-1)(shortcut)
+
+    result = layers.add([shortcut, conv])
+    result = layers.Activation('relu')(result)
+    return result
+
+
+def attention_decoder_block(bottom_tensor, skip_tensor, n_filters: int, kernel_size: int, upsample_size: int,
+                            dropout: float, batchnorm: bool, residual: bool = False):
     gating = gating_signal(bottom_tensor, n_filters=n_filters, batchnorm=batchnorm)
     attention = attention_block(skip_tensor, gating, n_filters=n_filters)
     up = layers.UpSampling2D((upsample_size, upsample_size))(bottom_tensor)
     up = layers.concatenate([up, attention], axis=-1)
-    up = conv_block(up, n_filters=n_filters, kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    if residual:
+        up = residual_conv_block(up, n_filters=n_filters, kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    else:
+        up = conv_block(up, n_filters=n_filters, kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
     return up
 
 
 def Attention_UNet(input_shape, num_classes: int = 1, num_filters: int = 32, dropout: float = 0.0, batchnorm=True,
                    final_activation='sigmoid'):
     filters = [num_filters * 2 ** i for i in range(5)]  # [32, 64, 128, 256, 512]
-    kernel_size = 3  # size of the convolutional filter
-    upsample_size = 2  # size of upsampling filters
+    kernel_size = 3
+    upsample_size = 2
 
     # Input layer
-    inputs = layers.Input(shape=input_shape, dtype=tf.float32)
+    inputs = layers.Input(shape=input_shape, dtype=tf.float32, name='input')
 
     # Encoder
     conv1, pool1 = encoder_block(inputs, filters[0], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
@@ -736,10 +794,14 @@ def Attention_UNet(input_shape, num_classes: int = 1, num_filters: int = 32, dro
     conv5 = conv_block(pool4, filters[4], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
 
     # Decoder
-    up1 = attention_decoder_block(conv5, conv4, filters[3], kernel_size, upsample_size, dropout, batchnorm)
-    up2 = attention_decoder_block(up1, conv3, filters[2], kernel_size, upsample_size, dropout, batchnorm)
-    up3 = attention_decoder_block(up2, conv2, filters[1], kernel_size, upsample_size, dropout, batchnorm)
-    up4 = attention_decoder_block(up3, conv1, filters[0], kernel_size, upsample_size, dropout, batchnorm)
+    up1 = attention_decoder_block(conv5, conv4, filters[3], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=False)
+    up2 = attention_decoder_block(up1, conv3, filters[2], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=False)
+    up3 = attention_decoder_block(up2, conv2, filters[1], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=False)
+    up4 = attention_decoder_block(up3, conv1, filters[0], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=False)
 
     # Output layer
     outputs = layers.Conv2D(num_classes, kernel_size=(1, 1))(up4)
@@ -748,6 +810,47 @@ def Attention_UNet(input_shape, num_classes: int = 1, num_filters: int = 32, dro
 
     # Model integration
     model = keras.Model(inputs=inputs, outputs=outputs, name='Attention_U-Net')
+    return model
+
+
+def Attention_ResUNet(input_shape, num_classes: int = 1, num_filters: int = 32, dropout: float = 0.0,
+                      batchnorm: bool = True, final_activation='sigmoid'):
+    filters = [num_filters * 2 ** i for i in range(5)]  # [32, 64, 128, 256, 512]
+    kernel_size = 3
+    upsample_size = 2
+
+    # Input layer
+    inputs = layers.Input(input_shape, dtype=tf.float32, name='input')
+
+    # Encoder
+    conv1 = residual_conv_block(inputs, filters[0], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    pool1 = layers.MaxPooling2D((2, 2))(conv1)
+    conv2 = residual_conv_block(pool1, filters[1], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    pool2 = layers.MaxPooling2D((2, 2))(conv2)
+    conv3 = residual_conv_block(pool2, filters[2], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    pool3 = layers.MaxPooling2D((2, 2))(conv3)
+    conv4 = residual_conv_block(pool3, filters[3], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+    pool4 = layers.MaxPooling2D((2, 2))(conv4)
+
+    # Bottom
+    conv5 = residual_conv_block(pool4, filters[4], kernel_size=kernel_size, dropout=dropout, batchnorm=batchnorm)
+
+    # Decoder
+    up1 = attention_decoder_block(conv5, conv4, filters[3], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=True)
+    up2 = attention_decoder_block(up1, conv3, filters[2], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=True)
+    up3 = attention_decoder_block(up2, conv2, filters[1], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=True)
+    up4 = attention_decoder_block(up3, conv1, filters[0], kernel_size=kernel_size, upsample_size=upsample_size,
+                                  dropout=dropout, batchnorm=batchnorm, residual=True)
+
+    # Output layer
+    outputs = layers.Conv2D(num_classes, kernel_size=(1, 1))(up4)
+    outputs = layers.BatchNormalization(axis=-1)(outputs)
+    outputs = layers.Activation(final_activation)(outputs)
+
+    model = keras.Model(inputs=inputs, outputs=outputs, name="Attention_ResU-Net")
     return model
 
 
@@ -785,7 +888,7 @@ def SuimNet(input_shape, num_classes, **kwargs):
         return u
 
     # Input
-    inputs = layers.Input(shape=input_shape)
+    inputs = layers.Input(shape=input_shape, name='input')
 
     # Encoder
     # First encoder block
