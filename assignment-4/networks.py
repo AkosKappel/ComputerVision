@@ -101,8 +101,8 @@ def class_indices_to_one_hot(mask):
 
 # Encode RGB mask to one-hot mask (e.g. [[0, 0, 1], [1, 0, 0]] -> [[0, 1, 0, 0], [1, 0, 0, 0]])
 def rgb_to_one_hot(mask):
-    indices = rgb_to_class_indices(mask)
-    one_hot_mask = class_indices_to_one_hot(indices)
+    indices_mask = rgb_to_class_indices(mask)
+    one_hot_mask = class_indices_to_one_hot(indices_mask)
     return one_hot_mask
 
 
@@ -115,8 +115,8 @@ def class_indices_to_rgb(mask):
 
 
 def one_hot_to_class_indices(mask):
-    indices = tf.argmax(mask, axis=-1)
-    return indices
+    indices_mask = tf.argmax(mask, axis=-1)
+    return indices_mask
 
 
 def one_hot_to_rgb(mask):
