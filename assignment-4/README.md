@@ -321,7 +321,7 @@ Výsledky som porovnal medzi štyrmi modelmi:
 - U-Net
 - Wider U-Net
 - U-Net++
-- U-Net3+
+- U-Net 3+
 
 Na grafe je vidieť, že dosiahnuté výsledky sú veľmi podobné.
 O trochu lepšie výsledky dosiahol model s väčším počtom filtrov, avšak rozdiel je minimálny.
