@@ -18,6 +18,11 @@
 * [networks.py](networks.py) - Implementácie viacerých druhov CNN sietí, vlastné loss funkcie a iné pomocné funkcie
 
 
+## Video s prezentáciou projektu
+
+https://github.com/vgg-fiit/assignment-4-AkosKappel/assets/56064033/6444b48b-6d50-48f0-9375-64d40b98d09d
+
+
 ## 1 Zadanie problému
 
 Pre toto zadanie som si vybral segmentačnú úlohu, ktorej cieľom je segmentovať obrázky podmorských snímok do ôsmich tried.
