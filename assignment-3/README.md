@@ -90,15 +90,15 @@ cv.destroyAllWindows()
 
 Výsledky z tejto metódy sú nasledovné:
 
-https://user-images.githubusercontent.com/56064033/229316910-2a8e27e6-8a6b-4a30-be19-c0cc7d7c1eb2.mp4
+[![crosswalk-sparse-v1](output/previews/crosswalk-sparse-v1.webp)](output/crosswalk-sparse-v1.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229316968-6f040cda-bc37-417b-a733-36e9936250d0.mp4
+[![fourway-sparse-v1](output/previews/fourway-sparse-v1.webp)](output/fourway-sparse-v1.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229316841-afa858f0-94f5-41c2-b6f2-fd4075c6e61d.mp4
+[![night-sparse-v1](output/previews/night-sparse-v1.webp)](output/night-sparse-v1.mp4)
 
 Na videách môžme vidieť, že sa celkom dobre podarilo sledovať pohyby objektov, ale mnoho sledovaých bodov sa vyskytuje na objektoch v pozadí, ktoré sa nehýbu.
 Práve preto som skúsil pridať pri výbere sledovaných bodov aj masku, ktorá určuje, ktoré časti snímky sa majú sledovať.
@@ -106,15 +106,15 @@ Táto maska je vytvorená pomocou metódy na určenie pozadia (*Mixture of Gauss
 Kód pre tento modifikovaný spôsob sledovania pohybu sa nachádza vo funkcií `sparse_optical_flow_v3()`.
 Na nasledujúcich troch videách je ukážka výsledkov s pridanou maskou na výber sledovaných bodov:
 
-https://user-images.githubusercontent.com/56064033/229512109-f0ce759e-d0ab-4cdd-b1f5-529365f5f65e.mp4
+[![crosswalk-sparse-v3](output/previews/crosswalk-sparse-v3.webp)](output/crosswalk-sparse-v3.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229512255-d9f53257-f8a3-45e9-9c74-9b2390179566.mp4
+[![fourway-sparse-v3](output/previews/fourway-sparse-v3.webp)](output/fourway-sparse-v3.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229512298-0ad1026f-af0b-4ba2-8c60-811105faa6fb.mp4
+[![night-sparse-v3](output/previews/night-sparse-v3.webp)](output/night-sparse-v3.mp4)
 
 Na týchto videách je jasne vidieť, že sa po pridaní masky na výber sledovaných bodov výrazne zlepšila kvalita sledovania pohybu objektov.
 Zároveň zmizli aj sledované body, ktoré sa nachádzali na pozadí a nehýbali sa.
@@ -200,15 +200,15 @@ cv.destroyAllWindows()
 
 Získané výsledky sú nasledovné:
 
-https://user-images.githubusercontent.com/56064033/229513257-589d4aee-d02c-4cde-b22f-f73458071323.mp4
+[![crosswalk-dense](output/previews/crosswalk-dense.webp)](output/crosswalk-dense.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229513295-ed031ab9-a0b2-4235-825d-e54d4b6c37f1.mp4
+[![fourway-dense](output/previews/fourway-dense.webp)](output/fourway-dense.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229513331-62e7f449-b320-427a-ab3b-f4b175c8934f.mp4
+[![night-dense](output/previews/night-dense.webp)](output/night-dense.mp4)
 
 
 
@@ -267,15 +267,15 @@ Každé video má 4 oblasti.
 Ľavá horná časť zobrazuje pôvodné video, ľavá dolná časť zobrazuje vypočítané pozadie.
 Na pravej hornej časti je maska pre objekty v popredí a na pravej dolnej časti sú znázornené objekty, ktoré som získal aplikovaní masky na pôvodné video.
 
-https://user-images.githubusercontent.com/56064033/229830230-3cd34ee7-2f80-4296-b766-bdbfab45ca54.mp4
+[![crosswalk-awi](output/previews/crosswalk-awi.webp)](output/crosswalk-awi.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229830439-7184f68a-d723-4cae-b6f8-07b660091b6a.mp4
+[![fourway-awi](output/previews/fourway-awi.webp)](output/fourway-awi.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229830574-a4f9eb17-a027-41a8-bffe-51929f9369eb.mp4
+[![night-awi](output/previews/night-awi.webp)](output/night-awi.mp4)
 
 #### 2.1.2 Mixture of Gaussians
 
@@ -314,15 +314,15 @@ cv.destroyAllWindows()
 
 Výsledky z metódy *Mixtures of Gaussians* sú takéto:
 
-https://user-images.githubusercontent.com/56064033/229830282-c00b46e1-3fa7-4f9b-956c-202870917349.mp4
+[![crosswalk-mog](output/previews/crosswalk-mog.webp)](output/crosswalk-mog.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229830533-d56fd738-b54f-4202-91cc-5bc31cc11f0c.mp4
+[![fourway-mog](output/previews/fourway-mog.webp)](output/fourway-mog.mp4)
 
 ---
 
-https://user-images.githubusercontent.com/56064033/229830610-7b3d5b42-8f1c-4b38-97e0-d7269384d456.mp4
+[![night-mog](output/previews/night-mog.webp)](output/night-mog.mp4)
 
 
 ### 2.2 GrabCut
